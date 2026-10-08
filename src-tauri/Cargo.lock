@@ -218,8 +218,9 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
 name = "audioextract"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
+ "libc",
  "serde",
  "serde_json",
  "tauri",
@@ -230,6 +231,7 @@ dependencies = [
  "tauri-plugin-updater",
  "thiserror 2.0.21",
  "trash",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

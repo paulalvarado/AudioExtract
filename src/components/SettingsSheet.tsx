@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { UpdateState } from "../hooks/useUpdater";
 import { deviceLabel, formatDate, isGpu } from "../lib/format";
-import { STEM_LABELS, type AppInfo, type EngineStatus, type LibraryListing, type Quality } from "../types";
+import { STEM_LABELS, type AppInfo, type EngineStatus, type LibraryListing, type Quality, type SetupPlan } from "../types";
 import { AlertIcon, FolderIcon, RefreshIcon } from "./icons";
 import { Sheet, SheetSection } from "./Sheet";
 
@@ -10,6 +10,10 @@ interface SettingsSheetProps {
   listing: LibraryListing | null;
   engine: EngineStatus | null;
   checkingEngine: boolean;
+  /** Instalación del motor integrado, mientras haga falta o esté en marcha. */
+  setup: ReactNode | null;
+  setupPlan: SetupPlan | null;
+  onReinstallEngine: () => void;
   update: UpdateState;
   checkUpdates: boolean;
   onClose: () => void;
@@ -23,6 +27,20 @@ interface SettingsSheetProps {
 }
 
 const QUALITY_NAMES: Record<Quality, string> = { best: "máxima (BS-RoFormer)", fast: "rápida (Demucs)" };
+const ENGINE_KINDS: Record<EngineStatus["kind"], string> = { app: "motor integrado", python: "Python local", docker: "Docker" };
+
+/** El equipo ahora admite otra variante (p. ej. se instaló una GPU NVIDIA): reinstalar la aprovecha. */
+function EngineChange({ engine, plan }: { engine: EngineStatus | null; plan: SetupPlan | null }) {
+  if (engine?.kind !== "app" || !plan?.installed || !plan.variant || plan.variant === plan.installed.variant) return null;
+  return (
+    <p className="mt-2.5 flex items-start gap-1.5 text-xs leading-snug text-ink-2">
+      <AlertIcon width={13} height={13} className="mt-px shrink-0 text-warning" />
+      {plan.accelerator === "cpu"
+        ? "Este equipo ya no tiene una GPU que el motor pueda usar. Reinstálalo para que separe con el procesador."
+        : `${plan.reason} Reinstala el motor para aprovecharla.`}
+    </p>
+  );
+}
 
 export function SettingsSheet(props: SettingsSheetProps) {
   const { info, listing, engine, checkingEngine, update } = props;
@@ -48,11 +66,28 @@ export function SettingsSheet(props: SettingsSheetProps) {
       </SheetSection>
 
       <SheetSection title="Motor de separación">
-        <EngineSummary engine={engine} checking={checkingEngine} />
-        <SmallButton onClick={props.onRecheckEngine} disabled={checkingEngine} className="mt-3">
-          <RefreshIcon width={14} height={14} className={checkingEngine ? "animate-spin" : ""} />
-          {checkingEngine ? "Comprobando…" : "Comprobar de nuevo"}
-        </SmallButton>
+        {props.setup ?? (
+          <>
+            <EngineSummary engine={engine} checking={checkingEngine} />
+            <EngineChange engine={engine} plan={props.setupPlan} />
+            <div className="mt-3 flex flex-wrap gap-2">
+              <SmallButton onClick={props.onRecheckEngine} disabled={checkingEngine}>
+                <RefreshIcon width={14} height={14} className={checkingEngine ? "animate-spin" : ""} />
+                {checkingEngine ? "Comprobando…" : "Comprobar de nuevo"}
+              </SmallButton>
+              {engine?.kind === "app" && props.setupPlan?.variant && (
+                <SmallButton onClick={props.onReinstallEngine} disabled={checkingEngine}>
+                  Reinstalar el motor
+                </SmallButton>
+              )}
+            </div>
+            {engine?.kind === "app" && props.setupPlan && (
+              <p className="mt-2.5 truncate text-xs text-ink-3 select-text" title={props.setupPlan.dir}>
+                Instalado en {props.setupPlan.dir}
+              </p>
+            )}
+          </>
+        )}
       </SheetSection>
 
       <SheetSection title="Actualizaciones">
@@ -135,7 +170,7 @@ function EngineSummary({ engine, checking }: { engine: EngineStatus | null; chec
       <dt className="text-ink-3">Estado</dt>
       <dd className="flex items-center gap-1.5 text-ink">
         <span className={`size-1.5 rounded-full ${isGpu(engine.device) ? "bg-accent" : "bg-warning"}`} aria-hidden />
-        Listo · {engine.kind === "docker" ? "Docker" : "Python local"}
+        Listo · {ENGINE_KINDS[engine.kind]}
       </dd>
       <dt className="text-ink-3">Acelerador</dt>
       <dd className="text-ink">
@@ -152,7 +187,7 @@ function EngineSummary({ engine, checking }: { engine: EngineStatus | null; chec
       <dd className={engine.transcription ? "text-ink" : "text-ink-2"}>
         {engine.transcription
           ? "Transcribe el bajo a tablatura"
-          : "No disponible en este motor: reconstrúyelo con npm run docker:engine"}
+          : "No disponible en este motor"}
       </dd>
       {engine.version && (
         <>

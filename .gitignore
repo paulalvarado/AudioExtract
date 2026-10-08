@@ -30,5 +30,6 @@ release/
 Thumbs.db
 .idea/
 
-# Ruedas de Python que lleva el instalador (las descarga scripts/vendor-wheels.mjs)
+# Ruedas de Python y uv que lleva el instalador (los descargan scripts/vendor-wheels.mjs y vendor-uv.mjs)
 python/wheels/
+src-tauri/binaries/

@@ -84,9 +84,11 @@ separación.
 - Límites: fragmentos de ataque, notas fantasma y octavas equivocadas siguen siendo posibles, sobre
   todo con una pista de bajo poco limpia. La separación en calidad máxima da un bajo más limpio.
 
-## Añadir o quitar modelos de la imagen
+## Añadir o quitar modelos
 
-La lista de modelos incluidos es un argumento de construcción:
+El motor integrado descarga los modelos de `MODELS` en `src-tauri/src/setup.rs` (cambiar esa lista hace
+que la app ponga al día el motor de cada usuario). En la imagen Docker, la lista es un argumento de
+construcción:
 
 ```powershell
 docker build -f docker/engine.Dockerfile --build-arg MODELS="htdemucs htdemucs_6s uvr_wind" -t audioextract-engine python

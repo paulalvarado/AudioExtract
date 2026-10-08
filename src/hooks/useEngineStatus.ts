@@ -4,7 +4,8 @@ import type { EngineStatus, OptionalStem, Quality } from "../types";
 
 /**
  * Estado del motor de separación. La primera comprobación la lanza el backend
- * al arrancar; `refresh` repite `--check` (p. ej. después de abrir Docker).
+ * al arrancar; `refresh` repite `--check` y `replace` usa el estado que devuelve
+ * la instalación del motor integrado.
  */
 export function useEngineStatus() {
   const [status, setStatus] = useState<EngineStatus | null>(null);
@@ -17,7 +18,8 @@ export function useEngineStatus() {
     } catch (raw) {
       setStatus({
         ready: false,
-        kind: "docker",
+        kind: "app",
+        needsSetup: false,
         device: null,
         deviceName: null,
         protocol: 0,
@@ -39,7 +41,8 @@ export function useEngineStatus() {
   }, [load]);
 
   const refresh = useCallback(() => load(true), [load]);
-  return { status, checking, refresh };
+  const replace = useCallback((next: EngineStatus) => setStatus(next), []);
+  return { status, checking, refresh, replace };
 }
 
 /** Calidades que el motor puede usar, de mejor a más rápida. */

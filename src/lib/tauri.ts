@@ -5,17 +5,36 @@ import {
   type AppInfo,
   type BassNote,
   type EngineStatus,
+  type EngineVariant,
   type LibraryItem,
   type LibraryListing,
   type MixState,
   type SeparationEvent,
   type SeparationRequest,
+  type SetupEvent,
+  type SetupPlan,
 } from "../types";
 
 // Puente tipado con los comandos de src-tauri/src/commands.rs.
 
 export function engineStatus(refresh = false): Promise<EngineStatus> {
   return invoke<EngineStatus>("engine_status", { refresh });
+}
+
+/** Equipo detectado y variante del motor integrado que le corresponde. */
+export function engineSetupPlan(): Promise<SetupPlan> {
+  return invoke<SetupPlan>("engine_setup_plan");
+}
+
+/** Instala o pone al día el motor integrado; devuelve su estado al terminar. */
+export function engineSetupStart(variant: EngineVariant, onEvent: (event: SetupEvent) => void): Promise<EngineStatus> {
+  const channel = new Channel<SetupEvent>();
+  channel.onmessage = onEvent;
+  return invoke<EngineStatus>("engine_setup_start", { variant, onEvent: channel });
+}
+
+export function engineSetupCancel(): Promise<boolean> {
+  return invoke<boolean>("engine_setup_cancel");
 }
 
 /**

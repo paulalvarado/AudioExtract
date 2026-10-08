@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Transcribe la pista de bajo de una extracción a notas, para el modo práctica de AudioExtract.
 
-Sigue las reglas de `separate.py`: la app lo lanza como proceso hijo (en Docker o
-con un Python local), stdout queda reservado al protocolo (una línea JSON por
+Sigue las reglas de `separate.py`: la app lo lanza como proceso hijo (motor integrado,
+Python local o Docker), stdout queda reservado al protocolo (una línea JSON por
 mensaje) y todo lo demás —el `print` de Basic Pitch, avisos de librerías— va a stderr.
 
     {"type": "done",  "model": "basic_pitch", "notes": [
@@ -162,7 +162,7 @@ def main() -> int:
         return 0
     except ModuleNotFoundError as error:
         if catalog.offline():
-            message = "La imagen del motor no incluye la transcripción del bajo. Reconstrúyela con: npm run docker:engine"
+            message = f"El motor no incluye la transcripción del bajo. {catalog.repair_hint()}"
         else:
             message = (
                 f"Falta el paquete «{error.name}» en {sys.executable}. Instala la transcripción con: "

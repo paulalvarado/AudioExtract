@@ -1,32 +1,33 @@
 <#
 .SYNOPSIS
-  Instala AudioExtract en Windows desde el código fuente, sin instalar Rust, Node ni Python:
-  todo se compila dentro de Docker.
+  Compila e instala AudioExtract en Windows desde el código fuente, sin instalar Rust, Node ni Python:
+  la compilación corre dentro de Docker.
 
 .DESCRIPTION
-  1. Comprueba Docker Desktop (y si hay GPU NVIDIA).
-  2. Construye la imagen del motor de separación (la primera vez descarga ~10 GB).
-  3. Compila el instalador de la app en release\.
-  4. Lo ejecuta. Si ya tienes AudioExtract instalado, se actualiza encima y conserva
+  1. Comprueba Docker Desktop (solo hace falta para compilar).
+  2. Compila el instalador de la app en release\.
+  3. Lo ejecuta. Si ya tienes AudioExtract instalado, se actualiza encima y conserva
      la biblioteca y los ajustes.
+
+  El motor de separación ya no se construye aquí: la app lo instala por sí misma la primera vez
+  que la abres (Python, PyTorch según tu GPU y los modelos), sin Docker. Con -DockerEngine se
+  construye además la imagen Docker del motor, para quien prefiera usarla (AUDIOEXTRACT_ENGINE=docker).
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\install.ps1
 
 .EXAMPLE
-  # Solo recompilar la app (el motor ya está construido):
-  powershell -ExecutionPolicy Bypass -File scripts\install.ps1 -SkipEngine
-
-.EXAMPLE
-  # Motor más ligero, sin la calidad máxima (ahorra ~0,7 GB):
-  powershell -ExecutionPolicy Bypass -File scripts\install.ps1 -Models "htdemucs htdemucs_6s uvr_wind"
+  # Además, la imagen Docker del motor (opcional; la primera vez descarga ~10 GB):
+  powershell -ExecutionPolicy Bypass -File scripts\install.ps1 -DockerEngine
 #>
 [CmdletBinding()]
 param(
-  [switch]$SkipEngine,
+  [switch]$DockerEngine,
   [switch]$SkipApp,
   [switch]$NoLaunch,
-  [string]$Models = "htdemucs htdemucs_6s bs_roformer_sw uvr_wind"
+  [string]$Models = "htdemucs htdemucs_6s bs_roformer_sw uvr_wind",
+  # Sin efecto: el motor Docker ya solo se construye con -DockerEngine.
+  [switch]$SkipEngine
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,14 +47,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "Docker $(docker version --format '{{.Server.Version}}') listo."
 
-if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
-  $gpu = (nvidia-smi --query-gpu=name --format=csv,noheader | Select-Object -First 1)
-  Write-Host "GPU NVIDIA detectada: $gpu. La separación usará CUDA."
-} else {
-  Write-Host "No se detecta una GPU NVIDIA: la app separará con la CPU (más lento, pero funciona)." -ForegroundColor Yellow
-}
-
-if (-not $SkipEngine) {
+if ($DockerEngine) {
   Step "Construyendo el motor de separación (la primera vez tarda: PyTorch + modelos, ~10 GB)"
   docker build -f docker/engine.Dockerfile --build-arg "MODELS=$Models" -t audioextract-engine python
   if ($LASTEXITCODE -ne 0) { Fail "Falló la construcción del motor. Revisa el mensaje anterior (¿conexión a internet? ¿espacio en disco?)." }
@@ -80,5 +74,6 @@ Write-Host "`nInstalador: $($setup.FullName)" -ForegroundColor Green
 if (-not $NoLaunch) {
   Step "Abriendo el instalador"
   Write-Host "Windows SmartScreen puede avisar porque el instalador no está firmado: «Más información» → «Ejecutar de todas formas»."
+  Write-Host "Al abrir la app, pulsa «Instalar el motor»: detecta tu GPU y descarga lo que necesita (una sola vez)."
   Start-Process $setup.FullName
 }

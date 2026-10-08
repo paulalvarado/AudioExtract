@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { Dock } from "./components/Dock";
+import { EngineSetup } from "./components/EngineSetup";
 import { ExportPanel } from "./components/ExportPanel";
 import { JobRow } from "./components/JobRow";
 import { LibraryView } from "./components/LibraryView";
@@ -10,6 +11,7 @@ import { NewExtraction } from "./components/NewExtraction";
 import { SettingsSheet } from "./components/SettingsSheet";
 import { TopBar } from "./components/TopBar";
 import { UpdateBanner } from "./components/UpdateBanner";
+import { setupVariant, useEngineSetup } from "./hooks/useEngineSetup";
 import { availableQualities, supportsInstrument, useEngineStatus } from "./hooks/useEngineStatus";
 import { useFileDrop } from "./hooks/useFileDrop";
 import { useLibrary } from "./hooks/useLibrary";
@@ -33,7 +35,8 @@ function resolveQuality(preferred: Quality | null, engine: EngineStatus | null):
 
 export default function App() {
   const [preferences, setPreferences] = usePreferences();
-  const { status: engine, checking: checkingEngine, refresh: recheckEngine } = useEngineStatus();
+  const { status: engine, checking: checkingEngine, refresh: recheckEngine, replace: replaceEngine } = useEngineStatus();
+  const setup = useEngineSetup(engine, replaceEngine);
   const library = useLibrary();
   const { player, load, unload } = usePlayer(library.setMix);
   const [info, setInfo] = useState<AppInfo | null>(null);
@@ -94,8 +97,10 @@ export default function App() {
         setNewOpen(true);
         setView("library");
         setNotice({
-          text: `No se puede separar «${fileName(path)}»: el motor no está listo. ${engine?.problem ?? "Compruébalo en Ajustes."}`,
-          tone: "error",
+          text: engine?.needsSetup
+            ? `Para separar «${fileName(path)}», primero instala el motor de separación.`
+            : `No se puede separar «${fileName(path)}»: el motor no está listo. ${engine?.problem ?? "Compruébalo en Ajustes."}`,
+          tone: engine?.needsSetup ? "info" : "error",
         });
         return;
       }
@@ -223,6 +228,17 @@ export default function App() {
 
   const exportItem = panel?.kind === "export" ? items.find((item) => item.id === panel.itemId) : undefined;
   const firstRun = library.listing !== null && items.length === 0;
+  // La tarjeta de instalación ocupa el sitio de las opciones (y del aviso de motor no disponible).
+  const setupCard =
+    engine?.needsSetup || setup.state.phase === "running" ? (
+      <EngineSetup
+        plan={setup.plan}
+        planError={setup.planError}
+        state={setup.state}
+        onStart={(variant) => void setup.start(variant)}
+        onCancel={setup.cancel}
+      />
+    ) : null;
   const showNew = newOpen || (firstRun && separation.job.phase === "idle");
   const showUpdate = !updateDismissed && ["available", "downloading", "installing"].includes(updater.state.phase);
 
@@ -235,6 +251,15 @@ export default function App() {
         showSearch={view === "library" && items.length > 0}
         engine={engine}
         checkingEngine={checkingEngine}
+        setup={setup.state}
+        onOpenEngine={() => {
+          if (setupCard) {
+            setView("library");
+            setNewOpen(true);
+          } else {
+            setPanel({ kind: "settings" });
+          }
+        }}
         onOpenSettings={() => setPanel({ kind: "settings" })}
         onNewExtraction={() => {
           setView("library");
@@ -275,6 +300,7 @@ export default function App() {
                   engine={engine}
                   checkingEngine={checkingEngine}
                   onRecheck={() => void recheckEngine()}
+                  setup={setupCard}
                   instruments={preferences.instruments}
                   onInstruments={(instruments) => setPreferences({ instruments })}
                   quality={quality}
@@ -333,6 +359,12 @@ export default function App() {
           listing={library.listing}
           engine={engine}
           checkingEngine={checkingEngine}
+          setup={setupCard}
+          setupPlan={setup.plan}
+          onReinstallEngine={() => {
+            const variant = setup.plan && setupVariant(setup.plan);
+            if (variant) void setup.start(variant);
+          }}
           update={updater.state}
           checkUpdates={preferences.checkUpdates}
           onClose={() => setPanel(null)}
@@ -369,7 +401,9 @@ export default function App() {
               ? `Solo se admiten archivos ${AUDIO_FORMATS_LABEL}`
               : busy
                 ? "Espera a que termine la separación en curso"
-                : !engine?.ready
+                : engine?.needsSetup
+                  ? "Primero instala el motor de separación"
+                  : !engine?.ready
                   ? "El motor no está listo: no se puede separar ahora"
                   : "Suelta para separar esta canción"}
           </p>

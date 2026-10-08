@@ -80,7 +80,10 @@ export interface LibraryListing {
 /** Resultado de `separate.py --check` (ver `EngineStatus` en src-tauri/src/engine.rs). */
 export interface EngineStatus {
   ready: boolean;
-  kind: "docker" | "python";
+  /** `app`: el motor integrado que instala la propia app. */
+  kind: "app" | "python" | "docker";
+  /** El motor integrado falta o no está al día: hay que instalarlo (ver `EngineSetup`). */
+  needsSetup: boolean;
   device: string | null;
   deviceName: string | null;
   /** 1: motor antiguo (4 pistas). 2: instrumentos opcionales y calidades. */
@@ -94,6 +97,48 @@ export interface EngineStatus {
   notes: string[];
   checkedAt: number;
 }
+
+/** Variante del motor integrado: qué PyTorch se instala (ver `Variant` en src-tauri/src/setup.rs). */
+export type EngineVariant = "windows-cuda" | "windows-cuda-legacy" | "windows-cpu" | "macos-arm64";
+
+export interface GpuInfo {
+  name: string;
+  memoryBytes: number | null;
+  driver: string | null;
+  computeCapability: string | null;
+}
+
+export interface InstalledEngine {
+  variant: EngineVariant;
+  models: string[];
+  installedAt: number;
+  appVersion: string;
+}
+
+/** Equipo detectado y lo que costará instalar el motor (ver `SetupPlan` en src-tauri/src/setup.rs). */
+export interface SetupPlan {
+  hardware: { os: string; arch: string; cpuThreads: number; memoryBytes: number | null; gpus: GpuInfo[] };
+  /** `null`: este sistema no admite el motor integrado (`reason` dice qué hacer). */
+  variant: EngineVariant | null;
+  accelerator: "cuda" | "mps" | "cpu" | null;
+  reason: string;
+  notes: string[];
+  downloadBytes: number;
+  installedBytes: number;
+  requiredBytes: number;
+  freeBytes: number | null;
+  installed: InstalledEngine | null;
+  upToDate: boolean;
+  dir: string;
+}
+
+export type SetupStep = "python" | "packages" | "ffmpeg" | "models" | "check";
+export const SETUP_STEPS: SetupStep[] = ["python", "packages", "ffmpeg", "models", "check"];
+
+export type SetupEvent =
+  | { event: "step"; data: { step: SetupStep } }
+  | { event: "progress"; data: { percent: number; bytes: number | null; total: number | null } }
+  | { event: "log"; data: { message: string } };
 
 export interface SeparationRequest {
   instruments: OptionalStem[];
@@ -121,6 +166,7 @@ export type AppErrorKind =
   | "input"
   | "busy"
   | "environment"
+  | "setup"
   | "engine"
   | "cancelled"
   | "library"

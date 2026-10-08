@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Instant;
 
 use serde::Serialize;
@@ -16,6 +17,7 @@ use crate::error::AppError;
 use crate::export::{self, ExportState};
 use crate::library::{self, Entry, Library, LibraryItem};
 use crate::settings::Settings;
+use crate::setup::{self, SetupEvent, SetupPlan, SetupState, Variant};
 
 /// Ejecuta trabajo bloqueante (procesos, disco, diálogos) fuera del hilo principal.
 async fn blocking<T: Send + 'static>(work: impl FnOnce() -> Result<T, AppError> + Send + 'static) -> Result<T, AppError> {
@@ -35,6 +37,48 @@ fn current_library(app: &AppHandle) -> Library {
 #[tauri::command]
 pub async fn engine_status(app: AppHandle, refresh: bool) -> Result<EngineStatus, AppError> {
     blocking(move || Ok(app.state::<EngineState>().refresh(refresh))).await
+}
+
+/// Equipo detectado, variante del motor integrado que le corresponde, tamaños y lo ya instalado.
+#[tauri::command]
+pub async fn engine_setup_plan() -> Result<SetupPlan, AppError> {
+    blocking(setup::plan).await
+}
+
+/// Instala o pone al día el motor integrado con `variant`. El avance llega por `on_event`; al
+/// terminar se comprueba que el motor arranca y se devuelve su estado.
+#[tauri::command]
+pub async fn engine_setup_start(
+    app: AppHandle,
+    variant: Variant,
+    on_event: Channel<SetupEvent>,
+) -> Result<EngineStatus, AppError> {
+    blocking(move || {
+        let emit: setup::Emit = Arc::new(move |event| {
+            let _ = on_event.send(event);
+        });
+        let engine_state = app.state::<EngineState>();
+        let result = setup::install(&app.state::<SetupState>(), variant, emit, || {
+            let status = engine_state.refresh(true);
+            if status.ready {
+                Ok(())
+            } else {
+                Err(status.problem.unwrap_or_default())
+            }
+        });
+        // Si salió bien, `check` acaba de comprobarlo; si no, el estado cambió y hay que mirarlo.
+        let status = engine_state.refresh(result.is_err());
+        result.map(|_| status)
+    })
+    .await
+}
+
+/// Detiene la instalación del motor. Devuelve `false` si no había ninguna.
+#[tauri::command]
+pub async fn engine_setup_cancel(app: AppHandle) -> bool {
+    tauri::async_runtime::spawn_blocking(move || app.state::<SetupState>().cancel())
+        .await
+        .unwrap_or(false)
 }
 
 /// Separa `input_path` con los instrumentos y la calidad pedidos y guarda el

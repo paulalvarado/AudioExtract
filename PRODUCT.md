@@ -30,7 +30,7 @@ que puede llevar a su DAW o usar para practicar.
 
 ## Positioning
 
-Todo ocurre en el equipo del usuario: el motor corre en un contenedor sin red, sin cuentas ni
+Todo ocurre en el equipo del usuario: el motor lo instala la propia app y separa sin red, sin cuentas ni
 suscripciones, con modelos abiertos de última generación (Demucs v4, BS-RoFormer, UVR) acelerados
 por GPU. Separación, mezcla, transposición y exportación viven en la misma app.
 
@@ -39,8 +39,9 @@ por GPU. Separación, mezcla, transposición y exportación viven en la misma ap
 - Flujo principal: arrastrar un archivo de audio → elegir instrumentos → separar (minutos, con progreso) →
   escuchar y mezclar (volumen, mute, solo, semitonos, tempo) → exportar pistas o mezcla → volver a la
   biblioteca más tarde.
-- Motor de separación: Docker Desktop en Windows (GPU NVIDIA vía WSL2, o solo CPU) y Python nativo
-  con Metal en macOS Apple Silicon.
+- Motor de separación: integrado. La app instala su propio Python con PyTorch para CUDA (GPU NVIDIA),
+  Metal (Apple Silicon) o el procesador según el equipo, sin Docker ni pasos manuales. Docker queda
+  como alternativa opcional para desarrollo.
 - Distribución: proyecto público en GitHub. Instaladores en GitHub Releases; las actualizaciones se
   instalan con el mismo instalador `.exe` (NSIS), también desde la propia app.
 
@@ -57,7 +58,8 @@ por GPU. Separación, mezcla, transposición y exportación viven en la misma ap
 - Exportación de pistas sueltas o de la mezcla en WAV 16/24 bits o MP3.
 - Hardware soportado: Windows con GPU NVIDIA, Windows sin GPU (más lento; la app debe avisarlo) y
   macOS Apple Silicon.
-- La primera instalación del motor descarga alrededor de 10 GB (PyTorch + pesos de los modelos).
+- La primera vez, la app instala el motor con un clic: ≈4,4 GB con GPU NVIDIA, ≈1,8 GB sin ella (PyTorch
+  + pesos de los modelos). Después separa sin red y se pone al día solo cuando una versión lo necesita.
 - Interfaz y documentación en español.
 - Sin decidir: licencia del repositorio y propietario/nombre definitivo del repositorio en GitHub.
 

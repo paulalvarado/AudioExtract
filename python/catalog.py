@@ -2,7 +2,8 @@
 """Catálogo de modelos de separación que usa AudioExtract.
 
 Vive aparte de `separate.py` para que la imagen Docker descargue los pesos en una
-capa propia: modificar `separate.py` no obliga a descargar otra vez ~1 GB.
+capa propia: modificar `separate.py` no obliga a descargar otra vez ~1 GB. La app
+lo usa también para descargar los modelos al instalar el motor integrado.
 
     python catalog.py --prefetch htdemucs htdemucs_6s bs_roformer_sw uvr_wind
 
@@ -68,8 +69,23 @@ MODEL_LABELS = {
 
 
 def offline() -> bool:
-    """`AUDIOEXTRACT_OFFLINE=1` (lo define la imagen Docker): solo vale lo que ya está descargado."""
+    """`AUDIOEXTRACT_OFFLINE=1` (lo definen la imagen Docker y el motor integrado): solo vale lo que ya
+    está descargado."""
     return os.environ.get("AUDIOEXTRACT_OFFLINE") == "1"
+
+
+def managed() -> bool:
+    """`AUDIOEXTRACT_MANAGED=1`: el motor integrado, el entorno que instala y mantiene la propia app."""
+    return os.environ.get("AUDIOEXTRACT_MANAGED") == "1"
+
+
+def repair_hint() -> str:
+    """Cómo arreglar un entorno al que le falta algo, según dónde corre el motor."""
+    if managed():
+        return "Reinstala el motor desde Ajustes → Motor de separación."
+    if offline():
+        return "Reconstruye la imagen del motor con: npm run docker:engine"
+    return "Instala las dependencias con: pip install -r python/requirements.txt"
 
 
 def models_dir() -> Path:
@@ -152,7 +168,7 @@ def demucs_downloaded(name: str) -> bool:
 
 
 def is_available(key: str) -> bool:
-    """Si el modelo se puede usar ahora mismo (sin red, en Docker, tiene que estar descargado)."""
+    """Si el modelo se puede usar ahora mismo (sin red tiene que estar descargado)."""
     model = SEPARATOR_MODELS.get(key)
     if model is None:
         # Cualquier otro nombre es un modelo de Demucs (htdemucs_ft, mdx_extra…).
@@ -213,16 +229,24 @@ def create_separator(output_dir: Path, **options: Any) -> Any:
 
 
 def prefetch(keys: list[str]) -> None:
-    """Descarga y valida los pesos (se usa al construir la imagen Docker).
+    """Descarga y valida los pesos (al construir la imagen Docker y al instalar el motor integrado).
 
-    Las claves que no son de audio-separator se tratan como modelos de Demucs.
+    Las claves que no son de audio-separator se tratan como modelos de Demucs. Un modelo que ya está
+    se carga sin descargarlo. Si uno de audio-separator no carga (una descarga cortada deja el archivo
+    a medias y audio-separator no lo vuelve a bajar), se borra y se descarga otra vez.
     """
     for key in keys:
         if key in SEPARATOR_MODELS:
+            filename = SEPARATOR_MODELS[key].filename
             models_dir().mkdir(parents=True, exist_ok=True)
-            separator = create_separator(models_dir())
-            separator.load_model(model_filename=SEPARATOR_MODELS[key].filename)
-            detail = SEPARATOR_MODELS[key].filename
+            try:
+                create_separator(models_dir()).load_model(model_filename=filename)
+            except Exception as error:  # noqa: BLE001 - se reintenta una vez desde cero
+                print(f"{filename} no carga ({error}); se descarga de nuevo.", file=sys.stderr, flush=True)
+                for leftover in models_dir().glob(f"{Path(filename).stem}.*"):
+                    leftover.unlink(missing_ok=True)
+                create_separator(models_dir()).load_model(model_filename=filename)
+            detail = filename
         else:
             model = load_demucs(key)
             detail = f"{', '.join(model.sources)} @ {model.samplerate} Hz"

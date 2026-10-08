@@ -109,8 +109,7 @@ Ideas de uso:
 - **La tablatura** avanza hacia la línea blanca («ahora»): cada número es el traste en esa cuerda y la
   barra que le sigue, su duración. **Haz clic en la tablatura** para saltar a ese momento.
 
-La primera vez, el motor transcribe la pista de bajo en tu equipo (sin red, en CPU, unos segundos;
-más si Docker estaba parado). La transcripción se guarda junto a la pista (`bass.notes.json`) y las
+La primera vez, el motor transcribe la pista de bajo en tu equipo (sin red, en CPU, unos segundos). La transcripción se guarda junto a la pista (`bass.notes.json`) y las
 siguientes veces se abre al instante.
 
 - **4 o 5 cuerdas**: si alguna nota baja de E1 (41,2 Hz), el mástil es de 5 cuerdas (B E A D G); si no,
@@ -147,8 +146,10 @@ Desde el dock, el mezclador o cualquier fila de la biblioteca:
 - **Biblioteca**: abrir la carpeta, cambiarla o volver a la predeterminada. Al cambiar de carpeta, las
   extracciones anteriores se quedan donde estaban (puedes moverlas a la nueva).
 - **Motor de separación**: acelerador (CUDA, Metal o CPU), calidades e instrumentos disponibles, si
-  puede transcribir el bajo para el modo práctica, versión y avisos. **Comprobar de nuevo** tras abrir
-  Docker o actualizar el motor.
+  puede transcribir el bajo para el modo práctica, versión, avisos y dónde está instalado. **Reinstalar
+  el motor** lo repara o, si cambiaste de GPU, instala la variante que le toca. Si el motor aún no está
+  instalado, aquí aparece también el botón para instalarlo (ver
+  [INSTALACION.md](INSTALACION.md#primer-arranque-el-motor)).
 - **Actualizaciones**: versión instalada, buscar actualizaciones e instalarlas (si la compilación las
   tiene configuradas; ver [ACTUALIZACIONES.md](ACTUALIZACIONES.md)).
 

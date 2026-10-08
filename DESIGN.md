@@ -189,6 +189,16 @@ components:
     rounded: "{rounded.full}"
     padding: "0 10px"
     height: "28px"
+  engine-setup:
+    backgroundColor: "color-mix(in oklab, var(--color-surface) 60%, transparent)"
+    textColor: "{colors.ink}"
+    typography: "{typography.label}"
+    rounded: "{rounded.lg}"
+    padding: "10px 12px"
+  engine-setup-progress:
+    backgroundColor: "{colors.raised}"
+    rounded: "{rounded.full}"
+    height: "4px"
   panel:
     backgroundColor: "{colors.panel}"
     rounded: "{rounded.2xl}"
@@ -594,7 +604,9 @@ segmentado 12 → botón 8 → chip 6.
 - **Barra superior** (48 px, `surface`, borde inferior `line`): logotipo («Audio» en `ink-2` y «Extract» en `accent`,
   14 px seminegrita), búsqueda y, a la derecha, la píldora del motor, ajustes y el botón primario. La píldora del motor
   lleva un punto de 6 px: `accent` con GPU, `warning` en CPU, `danger` si no está disponible y `ink-4` con pulso
-  mientras se comprueba.
+  mientras se comprueba. Sin motor instalado dice «Instalar el motor» con el punto `warning` y su clic abre «Nueva
+  extracción», donde está la instalación. Mientras se instala, dice «Instalando motor · 42 %» (o «Actualizando motor»)
+  con el punto `accent` latiendo y la cifra tabular.
 - **Biblioteca y mezclador** se alternan desde el dock (botón «Mezclador/Biblioteca», tecla M o clic en el título),
   con doble clic en una fila y con el botón «Biblioteca» (icono de flecha atrás) en la cabecera del mezclador. No hay pestañas ni barra lateral.
 
@@ -685,6 +697,32 @@ Un instrumento de lectura, no un decorado: todo lo que se mueve dice qué tocar,
   (texto centrado).
 - **Accesibilidad:** el canvas es `role="img"` con una descripción del mástil, la afinación y el clic en la
   tablatura; el transporte sigue en el dock y en el teclado.
+
+### Instalación del motor (`EngineSetup`)
+Ocupa el sitio de las opciones en «Nueva extracción» (la zona de soltar dice «Primero, el motor de separación») y el de
+la sección del motor en Ajustes, mientras el motor integrado no está instalado o se está instalando. Es un trámite de
+una vez: la tarjeta informa y ofrece una sola acción, sin asistente de varias pantallas.
+- **En reposo:** título en 14 px seminegrita («Instala el motor de separación»), una frase en 13 px `ink-2` y un pozo
+  `surface` al 60 % (8 px de radio, 12 px de padding lateral) con una lista `dt`/`dd` de 12 px. Las filas son: GPU
+  (nombre y memoria en `ink-3` tabular), equipo (memoria e hilos), «Separará con» (punto de 6 px, `accent` si es GPU y
+  `warning` si es el procesador, más «GPU · CUDA 12.8», «GPU · Metal» o «Procesador») y descarga (≈ descarga ·
+  ocupará ≈). Debajo van los avisos en `warning` con icono de alerta: separar con el procesador será lento, poca
+  memoria, driver antiguo. Al pie, el botón primario «Instalar el motor» y, a su lado, el espacio libre en 12 px
+  `ink-3`, o en `danger` si no alcanza (y entonces el botón queda deshabilitado).
+- **Instalando:** el título («Instalando el motor» o «Poniendo al día el motor») con el porcentaje tabular a la
+  derecha, una barra de 4 px redonda (`raised` con el avance en `accent`, transición de anchura de 500 ms) y los cinco
+  pasos en filas de 28 px: hecho (check de 14 px en `accent`, texto `ink-2`), en curso (spinner, texto `ink` y los
+  bytes del paso en mono 11 px `ink-3` a la derecha) y pendiente (anillo de 2 px en `line`, texto `ink-3`). Al pie,
+  «Detener» como botón fantasma y una frase que recuerda que la biblioteca sigue disponible.
+- **Error:** bajo el pozo, «No se pudo instalar el motor» en `danger` con icono y el mensaje en un pozo `surface` con
+  borde `danger` al 30 %, mono 11 px seleccionable y altura máxima con desplazamiento. El botón primario pasa a
+  «Reintentar» con el icono de recargar.
+- **Detenida:** el título cambia a «Instalación detenida», la frase dice que lo descargado se aprovecha y el botón
+  primario es «Continuar». No es un error: no usa `danger`.
+- **Sistema no admitido:** solo el título y el motivo, sin botón.
+- **Ajustes, con el motor ya instalado:** el resumen de siempre más «Reinstalar el motor» (secundario) junto a
+  «Comprobar de nuevo», la ruta de instalación en 12 px `ink-3` recortada y, si el equipo admite ahora otra variante
+  (una GPU nueva), un aviso con icono `warning` que lo explica.
 
 ### Estados de carga, vacío y error
 - **Spinner:** círculo de 14 px con borde de 2 px en `ink-4` y el arco superior en `accent`.

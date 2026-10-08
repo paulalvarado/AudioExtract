@@ -23,33 +23,32 @@ ella sin separarla otra vez.
 | **Exportar** | Pistas sueltas o la mezcla que suena, en WAV 24/16 bits o MP3 320 kbps, aplicando (o no) volumen, tono y tempo. |
 | **Biblioteca** | Carpeta normal (`Música\AudioExtract`) con una subcarpeta por canción: pistas WAV + `entry.json` con la mezcla guardada. |
 | **Actualizaciones** | El instalador de una versión nueva se instala encima de la anterior sin preguntar y conserva todo; la app también puede avisar y actualizarse sola desde GitHub Releases. |
-| **Privado** | El motor corre en un contenedor Docker **sin red**: el audio nunca sale de tu equipo. |
+| **Privado** | Todo ocurre en tu equipo: el motor solo usa la red para instalarse y, al separar, el audio nunca sale de tu ordenador. |
 
-## Instalación rápida (Windows)
+## Instalación
 
-Necesitas **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** (con WSL2) en marcha,
-unos **20 GB libres** y, para que vaya rápido, una GPU NVIDIA con el driver al día (sin ella
-funciona con la CPU, más despacio).
+Descarga el instalador de la [última versión](https://github.com/paulalvarado/AudioExtract/releases/latest)
+(`.exe` para Windows, `.dmg` para Mac con Apple Silicon) y ábrelo. La primera vez, la app instala su
+motor de separación con un clic: detecta tu GPU y descarga solo lo que tu equipo puede usar (≈4,4 GB con
+una GPU NVIDIA, ≈1,8 GB sin ella). No hace falta Docker ni Python.
+
+Windows SmartScreen avisará porque el instalador no está firmado: *Más información → Ejecutar de todas
+formas*. Para compilar el instalador desde el código basta con Docker Desktop:
 
 ```powershell
-git clone https://github.com/<usuario>/AudioExtract.git
+git clone https://github.com/paulalvarado/AudioExtract.git
 cd AudioExtract
 powershell -ExecutionPolicy Bypass -File scripts\install.ps1
 ```
 
-El script construye el motor de separación (la primera vez descarga ~10 GB: PyTorch y los modelos),
-compila el instalador dentro de Docker —no hace falta instalar Rust, Node ni Python— y lo abre.
-Windows SmartScreen avisará porque el instalador no está firmado: *Más información → Ejecutar de
-todas formas*.
-
-La guía completa, con macOS, instalación sin Docker y solución de problemas, está en
+La guía completa, con macOS, los motores alternativos y solución de problemas, está en
 **[docs/INSTALACION.md](docs/INSTALACION.md)**.
 
 ## Documentación
 
 | Documento | Para |
 | --- | --- |
-| [INSTALACION.md](docs/INSTALACION.md) | Instalar desde el repositorio en Windows o macOS, actualizar y desinstalar. |
+| [INSTALACION.md](docs/INSTALACION.md) | Instalar la app y su motor en Windows o macOS, compilar desde el código, actualizar y desinstalar. |
 | [USO.md](docs/USO.md) | Usar la app: separar, mezclar, transponer, exportar, atajos de teclado. |
 | [MODELOS.md](docs/MODELOS.md) | Qué modelo separa cada instrumento, calidad y tiempos medidos, límites. |
 | [ARQUITECTURA.md](docs/ARQUITECTURA.md) | Cómo encajan la interfaz, el backend en Rust y el motor en Python. |
@@ -60,9 +59,9 @@ La guía completa, con macOS, instalación sin Docker y solución de problemas, 
 ## Cómo funciona, en una imagen
 
 ```
- Interfaz (React)  ──invoke──►  Backend (Rust/Tauri)  ──docker run --network none──►  Motor (Python)
-   biblioteca, dock,              biblioteca en disco,          Demucs v4 · BS-RoFormer SW · UVR Wind
-   mezclador, exportación         progreso, exportación         una línea JSON por mensaje en stdout
+ Interfaz (React)  ──invoke──►  Backend (Rust/Tauri)  ──proceso hijo──►  Motor (Python, instalado por la app)
+   biblioteca, dock,              biblioteca en disco,     Demucs v4 · BS-RoFormer SW · UVR Wind
+   mezclador, exportación         instala el motor (uv)    una línea JSON por mensaje en stdout
         ▲                                   │
         └── pistas WAV (protocolo asset:) ◄─┘
 ```
@@ -71,9 +70,9 @@ La guía completa, con macOS, instalación sin Docker y solución de problemas, 
 
 | | Mínimo | Recomendado |
 | --- | --- | --- |
-| Sistema | Windows 10/11 x64 · macOS 13+ (Apple Silicon) | Windows 11 |
-| Motor | Docker Desktop con WSL2 (Windows) · Python 3.10+ (macOS) | GPU NVIDIA con 4 GB de VRAM o más |
-| Disco | 20 GB para el motor + ~40 MB por minuto de canción separada | SSD |
+| Sistema | Windows 10/11 x64 · macOS 14+ (Apple Silicon) | Windows 11 |
+| GPU | Ninguna: separa con el procesador, más despacio | NVIDIA con 4 GB de VRAM o más (driver 527+) |
+| Disco | ~2 GB para el motor sin GPU, ~6 GB con GPU NVIDIA, + ~40 MB por minuto de canción separada | SSD |
 | Memoria | 8 GB | 16 GB |
 
 ## Licencias
@@ -85,6 +84,7 @@ código tiene que publicarse con esta misma licencia. Se ofrece sin ninguna gara
 
 Usa componentes con licencias propias, todas compatibles con la GPL 3: Demucs y audio-separator (MIT), Basic Pitch (Apache-2.0, con su
 modelo incluido en el paquete), Signalsmith Stretch (MIT),
-Tauri (MIT/Apache-2.0), LAME a través de wasm-media-encoders (LGPL, cargado como archivo aparte) y los
-pesos de cada modelo, que se descargan de sus repositorios oficiales al construir el motor (ver
+Tauri (MIT/Apache-2.0), uv (MIT/Apache-2.0, viaja con la app para instalar el motor), PyTorch (BSD), ffmpeg (GPL, de
+imageio-ffmpeg), LAME a través de wasm-media-encoders (LGPL, cargado como archivo aparte) y los
+pesos de cada modelo, que se descargan de sus repositorios oficiales al instalar el motor (ver
 [docs/MODELOS.md](docs/MODELOS.md)).

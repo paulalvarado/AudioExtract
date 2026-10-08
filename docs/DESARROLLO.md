@@ -34,9 +34,13 @@
 │   ├── catalog.py               Modelos: disponibilidad y descarga
 │   ├── requirements.txt
 │   ├── requirements-transcription.txt   Dependencias de transcribe.py (basic-pitch va aparte)
+│   ├── requirements-local.txt   ffmpeg en rueda (solo motor integrado)
+│   ├── constraints.txt          Versiones comprobadas (las de la imagen Docker 2.1)
+│   ├── locks/                   Entorno exacto por variante (npm run engine:lock)
 │   └── wheels/                  Ruedas que lleva el instalador (las descarga vendor-wheels.mjs; no se versionan)
 ├── docker/                      engine.Dockerfile (motor) y app.Dockerfile (instalador y tests)
-├── scripts/                     install.ps1, setup-python.*, nsis-template, setup-updater, set-version
+├── scripts/                     install.ps1, vendor-uv/wheels, lock-engine.sh, setup-python.*, nsis-template,
+│                                setup-updater, set-version
 ├── docs/                        Esta documentación
 ├── .github/workflows/           CI y publicación de versiones
 ├── PRODUCT.md                   Contexto de producto (usuarios, propósito, principios)
@@ -55,16 +59,19 @@ Visual Studio con C++ y WebView2).
 
 ```bash
 npm install
-npm run tauri dev        # app con recarga en caliente; motor: la imagen de Docker
+npm run tauri dev        # app con recarga en caliente; motor: el integrado (se instala desde la app)
 ```
 
-Para desarrollar con el motor Python del repositorio:
+`npm run tauri dev` usa el mismo motor integrado que la app instalada (la carpeta de datos es la misma).
+Para desarrollar con un motor Python del repositorio, crea `python/.venv`; la app lo usa si no hay motor
+integrado instalado (o fíjalo con `AUDIOEXTRACT_PYTHON`):
 
 ```bash
 bash scripts/setup-python.sh --dev            # macOS / Linux  →  python/.venv
 scripts\setup-python.ps1 -Dev -Cuda           # Windows
-AUDIOEXTRACT_ENGINE=python npm run tauri dev  # PowerShell: $env:AUDIOEXTRACT_ENGINE="python"; npm run tauri dev
 ```
+
+Con Docker: `npm run docker:engine` y `AUDIOEXTRACT_ENGINE=docker`.
 
 ## Modo demo en el navegador
 
@@ -82,6 +89,8 @@ instrumento, así se puede escuchar la transposición y exportar de verdad. Par�
 | `/?engine=down` | Motor no disponible |
 | `/?engine=old` | Motor de la versión 1 |
 | `/?engine=cpu` | Sin GPU |
+| `/?engine=setup` | Motor sin instalar: tarjeta de instalación y progreso simulado (`setup-cpu`: equipo sin GPU; `setup-error`: falla la descarga la primera vez; `setup-space`: no hay espacio) |
+| `/?engine=update` | Motor desactualizado: se pone al día solo al abrir |
 | `/?update` | Hay una actualización |
 | `/?tab=error` | La transcripción del bajo (modo práctica) falla |
 
@@ -98,9 +107,11 @@ Vite sustituye `import.meta.env.MODE` al compilar, así que el modo demo no lleg
 | `npm run dev` / `dev:web` | Servidor de Vite (para Tauri) / modo demo en el navegador |
 | `npm run build` | Comprobación de tipos + build de la interfaz (antes prepara `python/wheels/`) |
 | `npm run vendor:wheels` | Descarga las ruedas de Python puro que lleva el instalador (versiones y SHA-256 fijos) |
+| `npm run vendor:uv` | Descarga uv para el sistema de destino a `src-tauri/binaries/` (también antes de `build` y `dev`) |
+| `npm run engine:lock` | Regenera `python/locks/*.txt` en Docker tras cambiar `requirements*.txt` o `constraints.txt` |
 | `npm run tauri dev` · `tauri build` | App nativa (requiere Rust) |
-| `npm run docker:engine` | Imagen del motor |
-| `npm run docker:check` | `--check` del motor con GPU y sin red |
+| `npm run docker:engine` | Imagen Docker del motor (opcional) |
+| `npm run docker:check` | `--check` de esa imagen con GPU y sin red |
 | `npm run docker:app` | Instalador de Windows en `release/` |
 | `npm run docker:test` | Compila los tests de Rust para Windows y los ejecuta |
 | `npm run nsis:template` | Regenera la plantilla NSIS parcheada (tras actualizar Tauri) |
@@ -114,28 +125,31 @@ npm run build                                   # TypeScript estricto + Vite
 npm run docker:test                             # tests de Rust (Windows)
 cargo test --manifest-path src-tauri/Cargo.toml --lib            # nativo
 cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings
-docker run --rm --gpus all --network none audioextract-engine --check
 ```
 
 La CI (`.github/workflows/ci.yml`) ejecuta el build de la interfaz, clippy y los tests de Rust en
 Windows, y compila los scripts de Python.
 
 Antes de publicar un instalador que cambie algo del motor, prueba con la **app instalada** (en Windows,
-Tauri da su carpeta de recursos con el prefijo `\\?\`, distinta de las rutas del repositorio). Este test
-comprueba el motor y transcribe un bajo con Docker real, igual que la app:
+Tauri da su carpeta de recursos con el prefijo `\\?\`, distinta de las rutas del repositorio). Estos
+tests instalan o ponen al día el motor integrado con el uv de la app, lo comprueban y transcriben un bajo,
+igual que la app:
 
 ```powershell
 $env:AUDIOEXTRACT_E2E_RESOURCES = "\\?\$env:LOCALAPPDATA\AudioExtract"
+$env:AUDIOEXTRACT_E2E_DATA = "$env:LOCALAPPDATA\com.audioextract.desktop"
+$env:AUDIOEXTRACT_UV = "$env:LOCALAPPDATA\AudioExtract\uv.exe"
 $env:AUDIOEXTRACT_E2E_BASS = "$env:USERPROFILE\Music\AudioExtract\<canción>\bass.wav"
-release\tests\audioextract-tests.exe --ignored e2e
+release\tests\audioextract-tests.exe --ignored e2e --test-threads 1
 ```
 
-Para probar el motor a mano:
+Para probar el motor integrado a mano (los mismos ajustes que pone la app):
 
-```bash
-docker run --rm --gpus all --network none \
-  -v "C:\ruta\cancion.mp3:/input/source.mp3:ro" -v "C:\ruta\salida:/output" \
-  audioextract-engine --input /input/source.mp3 --output /output --instruments piano,wind --quality best
+```powershell
+$motor = "$env:LOCALAPPDATA\com.audioextract.desktop\engine"
+$env:TORCH_HOME = "$motor\models\torch"; $env:AUDIOEXTRACT_MODELS_DIR = "$motor\models\separator"
+$env:AUDIOEXTRACT_OFFLINE = "1"; $env:AUDIOEXTRACT_MANAGED = "1"; $env:PATH = "$motor\bin;$env:PATH"
+& "$motor\venv\Scripts\python.exe" -u python\separate.py --input cancion.mp3 --output salida --instruments piano,wind --quality best
 ```
 
 ## Convenciones

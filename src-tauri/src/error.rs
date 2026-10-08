@@ -28,6 +28,17 @@ pub enum AppError {
     #[error("{0}")]
     Environment(String),
 
+    /// El motor integrado no está instalado o no está al día (ver `setup.rs`).
+    #[error("{0}")]
+    SetupNeeded(String),
+
+    /// Falló la instalación del motor integrado.
+    #[error("{0}")]
+    Setup(String),
+
+    #[error("Ya se está instalando el motor")]
+    SetupBusy,
+
     /// El motor arrancó pero la separación falló.
     #[error("{0}")]
     Engine(String),
@@ -35,7 +46,7 @@ pub enum AppError {
     #[error("Falta la pista «{0}» en la salida del motor")]
     MissingStem(String),
 
-    #[error("Separación cancelada")]
+    #[error("Operación cancelada")]
     Cancelled,
 
     #[error("{0}")]
@@ -61,8 +72,9 @@ impl AppError {
     fn kind(&self) -> &'static str {
         match self {
             Self::InputNotFound(_) | Self::UnsupportedFormat => "input",
-            Self::Busy | Self::TranscriptionBusy => "busy",
-            Self::Spawn { .. } | Self::ScriptNotFound(_) | Self::Environment(_) => "environment",
+            Self::Busy | Self::TranscriptionBusy | Self::SetupBusy => "busy",
+            Self::Spawn { .. } | Self::ScriptNotFound(_) | Self::Environment(_) | Self::SetupNeeded(_) => "environment",
+            Self::Setup(_) => "setup",
             Self::Engine(_) | Self::MissingStem(_) => "engine",
             Self::Cancelled => "cancelled",
             Self::Library(_) => "library",

@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { availableQualities, supportsInstrument } from "../hooks/useEngineStatus";
 import type { DropHover } from "../hooks/useFileDrop";
 import { isGpu } from "../lib/format";
@@ -18,6 +18,8 @@ interface NewExtractionProps {
   engine: EngineStatus | null;
   checkingEngine: boolean;
   onRecheck: () => void;
+  /** Instalación del motor integrado (`EngineSetup`): va en lugar de las opciones mientras haga falta. */
+  setup: ReactNode | null;
   instruments: OptionalStem[];
   onInstruments: (instruments: OptionalStem[]) => void;
   quality: Quality;
@@ -53,6 +55,7 @@ export function NewExtraction({
   engine,
   checkingEngine,
   onRecheck,
+  setup,
   instruments,
   onInstruments,
   quality,
@@ -109,7 +112,9 @@ export function NewExtraction({
         </span>
         <span className="flex flex-col gap-1.5">
           <span className="text-base font-semibold tracking-tight text-ink">
-            {!ready
+            {setup
+              ? "Primero, el motor de separación"
+              : !ready
               ? "El motor no está listo"
               : busy
                 ? "Hay una separación en marcha"
@@ -120,7 +125,9 @@ export function NewExtraction({
                   : "Suelta una canción aquí"}
           </span>
           <span className="text-[13px] text-ink-3">
-            {!ready ? (
+            {setup ? (
+              "Se instala una vez, aquí al lado. Después podrás soltar canciones."
+            ) : !ready ? (
               checkingEngine ? "Comprobando el motor…" : "Soluciónalo aquí al lado y podrás separar canciones."
             ) : busy ? (
               "Podrás separar otra cuando termine."
@@ -134,7 +141,9 @@ export function NewExtraction({
         </span>
       </button>
 
-      {engine && !engine.ready ? (
+      {setup ? (
+        <div className="flex min-w-0 flex-col justify-center pr-6">{setup}</div>
+      ) : engine && !engine.ready ? (
         <EngineProblem engine={engine} checking={checkingEngine} onRecheck={onRecheck} />
       ) : (
         <div className={`flex min-w-0 flex-col gap-5 pr-6 ${ready ? "" : "opacity-60"}`}>
@@ -160,7 +169,7 @@ export function NewExtraction({
                     aria-pressed={on}
                     disabled={!supported}
                     onClick={() => toggle(stem)}
-                    title={supported ? STEM_HINTS[stem] : "Esta versión del motor no separa este instrumento: reconstrúyelo con npm run docker:engine"}
+                    title={supported ? STEM_HINTS[stem] : "El motor instalado no separa este instrumento"}
                     style={stemStyle(stem)}
                     className={`flex min-w-0 flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
                       on ? "border-(--stem)/60 bg-(--stem)/10" : "border-line hover:border-ink-4 hover:bg-raised/50"
@@ -195,7 +204,7 @@ export function NewExtraction({
                     aria-checked={on}
                     disabled={!available}
                     onClick={() => onQuality(option)}
-                    title={available ? undefined : "El motor instalado no incluye este modelo: reconstrúyelo con npm run docker:engine"}
+                    title={available ? undefined : "El motor instalado no incluye este modelo"}
                     className={`flex min-w-0 flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
                       on ? "border-accent/70 bg-accent/10" : "border-line hover:border-ink-4 hover:bg-raised/50"
                     }`}
@@ -217,8 +226,7 @@ export function NewExtraction({
             )}
             {engine?.protocol === 1 && (
               <p className="mt-2 text-[11px] leading-snug text-ink-3">
-                Tu motor es de una versión anterior: solo separa voces, batería, bajo y otros. Reconstrúyelo con{" "}
-                <code className="font-mono text-ink-2 select-text">npm run docker:engine</code> para añadir el resto.
+                Tu motor es de una versión anterior: solo separa voces, batería, bajo y otros.
               </p>
             )}
           </fieldset>

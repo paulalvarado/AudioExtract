@@ -1,187 +1,159 @@
-# Instalar AudioExtract desde el repositorio
+# Instalar AudioExtract
 
-AudioExtract tiene dos piezas que se instalan por separado:
+Basta con instalar la app. La primera vez que la abres, ella misma instala su **motor de separación**
+(Python, PyTorch y los modelos) con un clic. Elige la variante según tu equipo: con CUDA si tienes una
+GPU NVIDIA, con Metal en un Mac con Apple Silicon y para el procesador en el resto. No hace falta Docker,
+ni Python, ni ningún paso con comandos.
 
-1. **La app** (ventana, biblioteca, mezclador): un instalador de Windows (`.exe`) o una app de macOS.
-2. **El motor de separación** (PyTorch + modelos, ~10 GB): en Windows, una imagen de Docker; en macOS,
-   un entorno de Python.
-
-La app busca el motor cada vez que arranca y te dice si falta algo y cómo arreglarlo.
-
-- [Windows con Docker (recomendado)](#windows-con-docker-recomendado)
-- [macOS (Apple Silicon)](#macos-apple-silicon)
-- [Windows sin Docker (motor Python)](#windows-sin-docker-motor-python)
+- [Lo que necesitas](#lo-que-necesitas)
+- [Instalar la app](#instalar-la-app)
+- [Primer arranque: el motor](#primer-arranque-el-motor)
 - [Actualizar](#actualizar)
 - [Desinstalar](#desinstalar)
+- [Otros motores: Docker o tu propio Python](#otros-motores-docker-o-tu-propio-python)
 - [Variables de entorno](#variables-de-entorno)
 - [Solución de problemas](#solución-de-problemas)
 
 ---
 
-## Windows con Docker (recomendado)
+## Lo que necesitas
 
-### Lo que necesitas
-
-| Requisito | Detalle |
+| | Detalle |
 | --- | --- |
-| Windows 10 u 11 de 64 bits | |
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Con el backend **WSL2** (el predeterminado). Tiene que estar abierto al construir y al separar. |
-| [Git](https://git-scm.com/download/win) | Para clonar el repositorio. |
-| ~20 GB libres | Imagen del motor (~14 GB) + cachés de compilación. |
-| GPU NVIDIA (opcional) | Driver reciente. Docker Desktop la expone al contenedor automáticamente. Sin GPU, la app separa con la CPU. |
+| Sistema | Windows 10 u 11 de 64 bits, o macOS 14 o posterior en un Mac con Apple Silicon. |
+| Conexión a internet | Solo la primera vez, para descargar el motor. Después separa sin conexión. |
+| Espacio libre | Unos 9,5 GB durante la instalación del motor con GPU NVIDIA (luego ocupa ~5,9 GB) o 5,5 GB sin ella (luego, ~2 GB). Además, ~40 MB por minuto de canción separada. |
+| GPU NVIDIA (opcional) | Con 2 GB de memoria o más y un driver reciente (527 o posterior). Sin ella, separa con el procesador, más despacio. Las GPU de otras marcas no se usan. |
+| Memoria | 8 GB; 16 GB recomendados para la calidad máxima. |
 
-No hace falta instalar Rust, Node.js, Python ni Visual Studio: todo se compila dentro de Docker.
+---
 
-### Opción A: un solo comando
+## Instalar la app
+
+### Desde GitHub Releases
+
+Descarga el instalador de la [última versión](https://github.com/paulalvarado/AudioExtract/releases/latest):
+
+- **Windows**: `AudioExtract_<versión>_x64-setup.exe`. Se instala solo para tu usuario (no pide permisos
+  de administrador) en `%LOCALAPPDATA%\AudioExtract`. Windows SmartScreen avisará porque el instalador
+  no está firmado: *Más información → Ejecutar de todas formas*.
+- **macOS**: el `.dmg` de Apple Silicon. Como la app no está firmada por Apple, la primera vez ábrela con
+  *clic derecho → Abrir*.
+
+### Compilarla desde el código (Windows)
+
+Para compilar hace falta [Docker Desktop](https://www.docker.com/products/docker-desktop/) (con WSL2)
+y [Git](https://git-scm.com/download/win). Rust, Node y Visual Studio no hacen falta, porque todo se
+compila dentro de Docker. La app que sale no usa Docker para nada.
 
 ```powershell
-git clone https://github.com/<usuario>/AudioExtract.git
+git clone https://github.com/paulalvarado/AudioExtract.git
 cd AudioExtract
 powershell -ExecutionPolicy Bypass -File scripts\install.ps1
 ```
 
-El script [`scripts/install.ps1`](../scripts/install.ps1):
+[`scripts/install.ps1`](../scripts/install.ps1) compila el instalador en
+`release\AudioExtract_<versión>_x64-setup.exe` (la primera vez, unos 10 min) y lo abre. Equivale a
+`npm run docker:app`. Con `-NoLaunch` no abre el instalador.
 
-1. Comprueba que Docker está en marcha y si hay GPU NVIDIA.
-2. Construye la imagen del motor `audioextract-engine` (la primera vez: 20–40 min según la conexión).
-3. Comprueba el motor con `--check`.
-4. Compila el instalador en `release\AudioExtract_<versión>_x64-setup.exe` (la primera vez ~10 min).
-5. Abre el instalador.
+### Compilarla desde el código (macOS)
 
-Opciones útiles:
-
-```powershell
-scripts\install.ps1 -SkipEngine          # solo recompilar la app (el motor ya existe)
-scripts\install.ps1 -SkipApp             # solo reconstruir el motor
-scripts\install.ps1 -Models "htdemucs htdemucs_6s uvr_wind"   # sin la calidad máxima (−0,7 GB)
-scripts\install.ps1 -NoLaunch            # no abrir el instalador al terminar
-```
-
-### Opción B: paso a paso
-
-Con Node.js instalado, los atajos `npm run docker:*` equivalen a los comandos de la derecha:
-
-```powershell
-# 1. Motor de separación (una vez; incluye los pesos de todos los modelos)
-npm run docker:engine   # docker build -f docker/engine.Dockerfile -t audioextract-engine python
-
-# 2. Comprobar que el motor ve la GPU
-npm run docker:check    # docker run --rm --gpus all --network none audioextract-engine --check
-# → {"type": "device", "device": "cuda", "name": "NVIDIA GeForce …"}
-# → {"type": "capabilities", "protocol": 2, "qualities": {"fast": […], "best": […]}, "wind": true, "transcription": true}
-
-# 3. Instalador de la app → release\AudioExtract_<versión>_x64-setup.exe
-npm run docker:app      # docker build -f docker/app.Dockerfile --target export --output type=local,dest=release .
-```
-
-Ejecuta el instalador. Se instala solo para tu usuario (no pide permisos de administrador) en
-`%LOCALAPPDATA%\AudioExtract`. Windows SmartScreen avisará porque no está firmado: *Más información →
-Ejecutar de todas formas*.
-
-### Primer arranque
-
-Abre AudioExtract con Docker Desktop en marcha. En la barra superior verás el estado del motor:
-`CUDA` (GPU lista), `CPU` (sin GPU, más lento) o `Motor no disponible` con el motivo y el arreglo.
-Suelta una canción en la ventana y elige los instrumentos. La guía de uso está en [USO.md](USO.md).
+Necesitas [Rust](https://rustup.rs), Node.js 20.19+ y las herramientas de Xcode
+(`xcode-select --install`). Después: `npm ci && npm run tauri build`; la app queda en
+`src-tauri/target/release/bundle/macos/`.
 
 ---
 
-## macOS (Apple Silicon)
+## Primer arranque: el motor
 
-En macOS, Docker no puede usar la GPU del Mac, así que la app usa por defecto un **motor Python local**
-que aprovecha Metal (MPS).
+Al abrir la app sin motor, el panel «Nueva extracción» muestra lo que detectó en tu equipo (GPU, memoria
+y procesador), con qué separará, cuánto descarga y cuánto ocupará. Pulsa **Instalar el motor**. El
+avance se ve en el panel y en la barra superior, paso a paso: Python, PyTorch y las librerías de audio,
+ffmpeg, los modelos y una comprobación final. Mientras tanto puedes seguir escuchando tu biblioteca.
 
-1. Instala [Homebrew](https://brew.sh) si no lo tienes, y después:
+| Tu equipo | Variante | Descarga | Ocupa |
+| --- | --- | --- | --- |
+| GPU NVIDIA de la serie 16, 20 o posterior (capacidad de cómputo 7.0+) | PyTorch con CUDA 12.8 | ≈4,4 GB | ≈5,9 GB |
+| GPU NVIDIA anterior (Maxwell, Pascal: GTX 900/1000) | PyTorch con CUDA 12.6 | ≈3,9 GB | ≈5,1 GB |
+| Sin GPU NVIDIA, driver anterior al 527 o GPU de menos de 2 GB | PyTorch para el procesador | ≈1,8 GB | ≈2,0 GB |
+| Mac con Apple Silicon | PyTorch con Metal | ≈1,3 GB | ≈2,1 GB |
 
-   ```bash
-   brew install python@3.12 ffmpeg git
-   git clone https://github.com/<usuario>/AudioExtract.git
-   cd AudioExtract
-   bash scripts/setup-python.sh
-   ```
+(GB binarios, como los cuenta el explorador de archivos. Durante la instalación se ocupa más espacio
+temporalmente: el panel avisa si no hay suficiente.)
 
-   El script crea un entorno en `~/Library/Application Support/com.audioextract.desktop/python/.venv`
-   con PyTorch, Demucs y audio-separator, y comprueba que detecta Metal.
-
-2. Instala la app:
-   - **Desde GitHub Releases** (si el repositorio publica versiones): descarga el `.dmg` de Apple Silicon.
-     Como no está firmada por Apple, la primera vez ábrela con *clic derecho → Abrir*.
-   - **Desde el código**: necesitas [Rust](https://rustup.rs), Node.js 20.19+ y las herramientas de Xcode
-     (`xcode-select --install`). Después: `npm ci && npm run tauri build`; la app queda en
-     `src-tauri/target/release/bundle/macos/`.
-
-La primera separación de cada calidad descarga sus modelos (hasta ~1 GB) a `~/.cache`.
-
----
-
-## Windows sin Docker (motor Python)
-
-Útil si no puedes usar Docker. Necesitas Python 3.10–3.12 y [ffmpeg](https://www.gyan.dev/ffmpeg/builds/)
-en el PATH (`winget install Gyan.FFmpeg`).
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\setup-python.ps1 -Cuda   # sin -Cuda: solo CPU
-setx AUDIOEXTRACT_ENGINE python
-```
-
-Cierra y vuelve a abrir la app. El entorno queda en `%LOCALAPPDATA%\com.audioextract.desktop\python\.venv`
-y la app lo encuentra sola. La app sigue necesitando su instalador (Opción A con `-SkipEngine`, u
-Opción B paso 3).
+- **Dónde queda**: `%LOCALAPPDATA%\com.audioextract.desktop\engine` en Windows y
+  `~/Library/Application Support/com.audioextract.desktop/engine` en macOS. Ajustes → Motor de separación
+  muestra la ruta.
+- **Si se corta** (sin conexión, o porque pulsas *Detener*): vuelve a pulsar el botón. Lo ya descargado
+  no se repite.
+- **Reinstalar**: Ajustes → Motor de separación → *Reinstalar el motor*. Úsalo si algo se estropea o si
+  cambias de GPU. Si instalaste una GPU NVIDIA después, Ajustes te avisa de que el motor puede
+  aprovecharla.
+- **Privacidad**: la descarga sale de los repositorios oficiales (python-build-standalone, PyTorch, PyPI
+  y los de cada modelo) y cada paquete se comprueba contra el SHA-256 que trae la app. Al separar, el
+  motor no usa la red.
 
 ---
 
 ## Actualizar
 
 **Con un instalador nuevo**: ejecuta el `.exe` de la versión nueva con la app cerrada. Detecta la
-versión instalada y **se instala encima sin preguntar ni desinstalar nada**: la biblioteca, las mezclas
-guardadas y los ajustes se conservan. Es el mismo instalador que usa la actualización automática.
-
-**Desde el repositorio**:
-
-```powershell
-git pull
-powershell -ExecutionPolicy Bypass -File scripts\install.ps1 -SkipEngine
-```
-
-El instalador lleva los scripts del motor y las librerías de Python puro que necesitan, y la app los
-usa con la imagen que ya tienes: **instalar la versión nueva actualiza también el motor**. Solo si el
-[CHANGELOG](../CHANGELOG.md) dice expresamente que una versión requiere reconstruir la imagen (un cambio
-de PyTorch o de modelos), quita `-SkipEngine` (o ejecuta `npm run docker:engine`).
+versión instalada y **se instala encima sin preguntar ni desinstalar nada**: la biblioteca, las mezclas,
+los ajustes y el motor se conservan. Es el mismo instalador que usa la actualización automática.
 
 **Desde la app**: si el repositorio publica versiones firmadas en GitHub Releases
 ([ACTUALIZACIONES.md](ACTUALIZACIONES.md)), la app avisa de la versión nueva y la instala con un clic.
+
+**El motor se pone al día solo**: si una versión nueva necesita otras versiones de los paquetes del
+motor u otros modelos, la app lo detecta al abrirse y lo actualiza sin preguntar. Solo descarga lo que
+cambió, y el avance se ve en la barra superior. Si la versión solo cambia los scripts del motor, no hay
+nada que descargar: viajan con el instalador.
 
 ---
 
 ## Desinstalar
 
-1. **App**: *Configuración de Windows → Aplicaciones → AudioExtract → Desinstalar*. Por defecto conserva
-   los ajustes; marca «Eliminar los datos de aplicación» si quieres quitarlos. La biblioteca nunca se
-   borra al desinstalar.
-2. **Motor**: `docker rmi audioextract-engine` (libera ~14 GB). Opcional: `docker builder prune` para
-   las cachés de compilación.
-3. **Biblioteca**: la carpeta `Música\AudioExtract` (o la que elegiste) es tuya: bórrala a mano si ya no
-   la quieres.
+1. **App y motor**: *Configuración de Windows → Aplicaciones → AudioExtract → Desinstalar*. Marca
+   «Eliminar los datos de aplicación» para borrar también el motor (la carpeta `engine`) y los ajustes.
+   Si no la marcas, se conservan para una próxima instalación.
+2. **Biblioteca**: la carpeta `Música\AudioExtract` (o la que elegiste) es tuya y nunca se borra al
+   desinstalar. Bórrala a mano si ya no la quieres.
+3. Si alguna vez construiste la imagen Docker del motor: `docker rmi audioextract-engine` libera ~14 GB.
+
+---
+
+## Otros motores: Docker o tu propio Python
+
+El motor integrado es el predeterminado y el recomendado. Para desarrollar o en sistemas que no lo
+admiten (Linux, Mac con Intel), la app también puede usar:
+
+- **Tu propio Python** (3.10–3.12) con las dependencias del motor: `scripts\setup-python.ps1 -Dev` (o
+  `bash scripts/setup-python.sh --dev`) crea `python/.venv` en el repositorio, y la app lo usa si no hay
+  motor integrado. Para otro intérprete, define `AUDIOEXTRACT_PYTHON`. Necesita ffmpeg en el PATH.
+- **Docker** (Windows y Linux con GPU NVIDIA vía WSL2): construye la imagen con
+  `npm run docker:engine` (o `scripts\install.ps1 -DockerEngine`) y define
+  `setx AUDIOEXTRACT_ENGINE docker`. Docker Desktop tiene que estar abierto para separar.
 
 ---
 
 ## Variables de entorno
 
 La app las lee al arrancar y al separar. Defínelas como variables de usuario
-(`setx NOMBRE valor`) y vuelve a abrir la app.
+(`setx NOMBRE valor`) y vuelve a abrir la app. Ninguna hace falta con el motor integrado.
 
 | Variable | Por defecto | Uso |
 | --- | --- | --- |
-| `AUDIOEXTRACT_ENGINE` | `docker` (`python` en macOS) | Motor de separación |
+| `AUDIOEXTRACT_ENGINE` | `python` | `python`: el motor integrado (o el de `AUDIOEXTRACT_PYTHON`); `docker`: la imagen de Docker |
+| `AUDIOEXTRACT_PYTHON` | motor integrado → `python/.venv` del repo | Intérprete de Python con las dependencias del motor |
+| `AUDIOEXTRACT_SCRIPT` | el incluido en la app | `separate.py` alternativo |
+| `AUDIOEXTRACT_MODEL` | — | Modelo de Demucs para 4 pistas en calidad rápida, p. ej. `htdemucs_ft` (¹) |
+| `AUDIOEXTRACT_DEVICE` | `auto` | Forzar `cuda`, `cuda:1`, `mps` o `cpu` |
 | `AUDIOEXTRACT_IMAGE` | `audioextract-engine:latest` | Imagen de Docker del motor |
 | `AUDIOEXTRACT_DOCKER_GPUS` | `all` | `none` para no pasar la GPU a Docker (la app lo hace sola si Docker no puede usarla) |
 | `AUDIOEXTRACT_DOCKER` | `docker` | Ruta a `docker.exe` si no está en el PATH |
-| `AUDIOEXTRACT_PYTHON` | entorno de la app → `python/.venv` → `python` | Intérprete del motor Python |
-| `AUDIOEXTRACT_SCRIPT` | el incluido en la app | `separate.py` alternativo (motor Python) |
-| `AUDIOEXTRACT_MODEL` | — | Modelo de Demucs para 4 pistas en calidad rápida, p. ej. `htdemucs_ft` (¹) |
-| `AUDIOEXTRACT_DEVICE` | `auto` | Forzar `cuda`, `cuda:1`, `mps` o `cpu` |
+| `AUDIOEXTRACT_UV` | el incluido en la app | `uv` alternativo para instalar el motor integrado (pruebas) |
 
-(¹) Con Docker el modelo tiene que estar dentro de la imagen:
+(¹) El motor integrado y la imagen Docker solo usan modelos ya descargados. Con Docker:
 `docker build -f docker/engine.Dockerfile --build-arg MODELS="htdemucs htdemucs_6s htdemucs_ft bs_roformer_sw uvr_wind" -t audioextract-engine python`.
 
 ---
@@ -190,13 +162,12 @@ La app las lee al arrancar y al separar. Defínelas como variables de usuario
 
 | Síntoma | Causa y solución |
 | --- | --- |
-| «Docker Desktop no está en marcha» | Abre Docker Desktop, espera a que diga *Engine running* y pulsa *Comprobar de nuevo* en la app. |
-| «No existe la imagen audioextract-engine» | Falta construir el motor: `npm run docker:engine` (o `scripts\install.ps1 -SkipApp`). |
-| La barra dice `CPU` y tienes una GPU NVIDIA | Actualiza el driver de NVIDIA y Docker Desktop. Comprueba con `docker run --rm --gpus all --network none audioextract-engine --check`. |
-| «El motor instalado es de una versión anterior» | La app es nueva y el motor no: `npm run docker:engine`. Mientras tanto, separa voces/batería/bajo/otros. |
+| «No se pudo descargar» al instalar el motor | Sin conexión o se cortó. Pulsa *Reintentar*: lo ya descargado no se repite. Si estás detrás de un proxy, define `HTTPS_PROXY`. |
+| «Hacen falta X GB libres» | Libera espacio en el disco de `%LOCALAPPDATA%` y vuelve a abrir el panel. |
+| La barra dice `CPU` y tienes una GPU NVIDIA | Actualiza el driver de NVIDIA y, en Ajustes, pulsa *Reinstalar el motor*: la app vuelve a mirar tu GPU. |
+| «El motor se instaló, pero no arranca» | Pulsa *Reinstalar el motor*. Si persiste, el mensaje de debajo dice qué falló; abre una incidencia en GitHub con él. |
 | La calidad máxima tarda mucho | Sin GPU, BS-RoFormer tarda ~3 min por minuto de canción. Usa la calidad rápida. |
 | «Sin memoria» en la GPU | El motor reintenta en CPU automáticamente. Cierra otras apps que usen la GPU. |
-| No se puede leer un M4A | Con el motor Python, instala ffmpeg. En Docker ya viene incluido. |
 | SmartScreen bloquea el instalador | Es un instalador sin firma digital: *Más información → Ejecutar de todas formas*. |
 | La compilación de Docker falla por espacio | `docker system df` y `docker builder prune` para liberar cachés. |
 | El tono y el tempo aparecen deshabilitados | El módulo WASM de Signalsmith no pudo cargarse: actualiza WebView2 (Microsoft Edge). |

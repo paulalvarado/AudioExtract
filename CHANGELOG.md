@@ -8,10 +8,42 @@ versión requiere reconstruir el motor.
 
 ## [Sin publicar]
 
+## [1.1.0] — 2026-10-07
+
+**Ya no hace falta Docker.** Al abrir esta versión, pulsa «Instalar el motor» una vez y la app instala
+su propio motor según tu equipo (≈4,4 GB con GPU NVIDIA, ≈1,8 GB sin ella). Tu biblioteca y tus mezclas
+se conservan. La imagen Docker anterior deja de usarse: puedes borrarla con `docker rmi
+audioextract-engine` (libera ~14 GB), o seguir usándola con `AUDIOEXTRACT_ENGINE=docker`.
+
+### Añadido
+
+- **Motor integrado**: la app instala por sí misma el motor de separación, sin Docker ni Python. Detecta
+  la GPU NVIDIA (modelo, memoria, driver y generación), la memoria y el procesador, y elige qué instalar:
+  PyTorch con CUDA 12.8, con CUDA 12.6 para GPU anteriores (GTX 900/1000), para el procesador o con Metal
+  en Apple Silicon. Antes de empezar muestra lo detectado, lo que descargará y ocupará, y si hay espacio.
+  Después enseña el avance paso a paso (Python, PyTorch, ffmpeg, modelos y comprobación) en el panel y
+  en la barra superior. Se puede detener y continuar sin repetir lo descargado.
+- El motor se **pone al día solo** cuando una versión nueva de la app necesita otros paquetes o modelos:
+  solo descarga lo que cambió.
+- Ajustes → Motor de separación: **Reinstalar el motor**, la carpeta donde está instalado y un aviso si
+  el equipo admite ahora una variante mejor (por ejemplo, tras instalar una GPU).
+
 ### Cambiado
 
+- El motor predeterminado es el integrado en Windows y macOS. Docker y un Python propio siguen
+  disponibles con `AUDIOEXTRACT_ENGINE=docker` y `AUDIOEXTRACT_PYTHON`.
+- `scripts\install.ps1` solo compila la app; la imagen Docker del motor se construye aparte con
+  `-DockerEngine`.
+- Los mensajes de error del motor dicen cómo arreglarlo según dónde corre (Ajustes, Docker o pip), sin
+  pedir comandos con el motor integrado.
 - Las versiones de Windows se publican solo con el instalador `.exe`: el `.msi` (solo en inglés y sin la
   actualización encima sin preguntar) ya no se genera.
+- macOS 14 o posterior (onnxruntime ya no publica ruedas para macOS 13).
+
+### Corregido
+
+- Los M4A/AAC se leen con ffmpeg directamente: el lector anterior necesitaba `ffprobe`, que no todos los
+  entornos traen.
 
 ## [1.0.0] — 2026-10-07
 
@@ -52,5 +84,6 @@ Primera versión pública, como software libre bajo la licencia GPL 3.0 o poster
 - Modo demo en el navegador (`npm run dev:web`), CI y publicación con GitHub Actions, y documentación en
   `docs/`.
 
-[Sin publicar]: https://github.com/paulalvarado/AudioExtract/compare/v1.0.0...HEAD
+[Sin publicar]: https://github.com/paulalvarado/AudioExtract/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/paulalvarado/AudioExtract/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/paulalvarado/AudioExtract/releases/tag/v1.0.0

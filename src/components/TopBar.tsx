@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import type { SetupState } from "../hooks/useEngineSetup";
 import { deviceLabel, isGpu } from "../lib/format";
 import type { EngineStatus } from "../types";
 import { PlusIcon, SearchIcon, SettingsIcon } from "./icons";
@@ -9,6 +10,9 @@ interface TopBarProps {
   showSearch: boolean;
   engine: EngineStatus | null;
   checkingEngine: boolean;
+  setup: SetupState;
+  /** Clic en la píldora del motor: la instalación si falta, los ajustes si no. */
+  onOpenEngine: () => void;
   onOpenSettings: () => void;
   onNewExtraction: () => void;
   newExtractionOpen: boolean;
@@ -17,7 +21,19 @@ interface TopBarProps {
 }
 
 export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar(
-  { search, onSearch, showSearch, engine, checkingEngine, onOpenSettings, onNewExtraction, newExtractionOpen, updateAvailable },
+  {
+    search,
+    onSearch,
+    showSearch,
+    engine,
+    checkingEngine,
+    setup,
+    onOpenEngine,
+    onOpenSettings,
+    onNewExtraction,
+    newExtractionOpen,
+    updateAvailable,
+  },
   searchRef,
 ) {
   return (
@@ -45,7 +61,7 @@ export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar(
       )}
 
       <div className="ml-auto flex items-center gap-1.5">
-        <EnginePill engine={engine} checking={checkingEngine} onClick={onOpenSettings} />
+        <EnginePill engine={engine} checking={checkingEngine} setup={setup} onClick={onOpenEngine} />
         <button
           type="button"
           onClick={onOpenSettings}
@@ -70,11 +86,31 @@ export const TopBar = forwardRef<HTMLInputElement, TopBarProps>(function TopBar(
   );
 });
 
-function EnginePill({ engine, checking, onClick }: { engine: EngineStatus | null; checking: boolean; onClick: () => void }) {
+function EnginePill({
+  engine,
+  checking,
+  setup,
+  onClick,
+}: {
+  engine: EngineStatus | null;
+  checking: boolean;
+  setup: SetupState;
+  onClick: () => void;
+}) {
   let dot = "bg-ink-4";
   let text = "Comprobando el motor…";
   let title = "Comprobando el motor de separación";
-  if (!checking && engine) {
+  let pulse = checking;
+  if (setup.phase === "running") {
+    dot = "bg-accent";
+    pulse = true;
+    text = `${setup.update ? "Actualizando motor" : "Instalando motor"} · ${Math.round(setup.percent)} %`;
+    title = "El motor de separación se está instalando";
+  } else if (!checking && engine?.needsSetup) {
+    dot = "bg-warning";
+    text = "Instalar el motor";
+    title = "El motor de separación se instala una vez, desde «Nueva extracción»";
+  } else if (!checking && engine) {
     if (!engine.ready) {
       dot = "bg-danger";
       text = "Motor no disponible";
@@ -97,8 +133,8 @@ function EnginePill({ engine, checking, onClick }: { engine: EngineStatus | null
       title={title}
       className="flex h-7 items-center gap-2 rounded-full px-2.5 text-xs text-ink-3 transition-colors hover:bg-raised hover:text-ink-2"
     >
-      <span className={`size-1.5 rounded-full ${dot} ${checking ? "animate-pulse" : ""}`} aria-hidden />
-      {text}
+      <span className={`size-1.5 rounded-full ${dot} ${pulse ? "animate-pulse" : ""}`} aria-hidden />
+      <span className="tabular-nums">{text}</span>
     </button>
   );
 }

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Separa una canción en pistas por instrumento para AudioExtract.
 
-La app de Tauri lanza este script como proceso hijo (dentro de Docker o con un
-Python local) y lee su stdout. Cada mensaje es una línea JSON:
+La app de Tauri lanza este script como proceso hijo (con el motor integrado que
+instala la propia app, con un Python local o dentro de Docker) y lee su stdout. Cada mensaje es una línea JSON:
 
     {"type": "device",       "device": "cuda", "name": "NVIDIA GeForce RTX 3060"}
     {"type": "capabilities", "protocol": 2, "engine": "2.1.0", "wind": true, "transcription": true,
@@ -54,7 +54,7 @@ sys.stdout = sys.stderr
 
 import catalog  # noqa: E402 - después de proteger stdout
 
-ENGINE_VERSION = "2.1.0"
+ENGINE_VERSION = "2.2.0"
 PROTOCOL_VERSION = 2
 SAMPLE_RATE = 44100
 
@@ -208,10 +208,15 @@ def cpu_hint() -> str | None:
     if sys.platform == "darwin" and platform.machine() == "arm64":
         return "PyTorch no detecta Metal (MPS); actualiza torch a una versión reciente."
     if torch.version.cuda is not None:
+        if catalog.managed():
+            return "PyTorch tiene soporte CUDA pero no ve ninguna GPU: actualiza el driver de NVIDIA."
         return (
             "PyTorch tiene soporte CUDA pero no ve ninguna GPU. En Docker, el contenedor "
             "necesita --gpus all y un driver de NVIDIA reciente en el equipo."
         )
+    if catalog.managed():
+        # La app elige la variante de PyTorch según el equipo; con otra GPU, al reinstalar se elige de nuevo.
+        return None
     if sys.platform in ("win32", "linux"):
         return (
             "Esta instalación de PyTorch es solo CPU. Para usar la GPU NVIDIA: "
@@ -253,7 +258,7 @@ class Device:
 def load_audio(path: Path, samplerate: int, channels: int) -> Any:
     """Lee el audio como tensor [canales, muestras] a `samplerate`."""
     import torch
-    from demucs.audio import AudioFile, convert_audio
+    from demucs.audio import convert_audio
 
     try:
         import soundfile as sf
@@ -263,14 +268,44 @@ def load_audio(path: Path, samplerate: int, channels: int) -> Any:
         wav = torch.from_numpy(data.T.copy())
         return convert_audio(wav, source_rate, samplerate, channels)
     except Exception as soundfile_error:
-        # Plan B: ffmpeg a través del lector de Demucs (M4A, AAC… o MP3 raros).
+        # Plan B: ffmpeg (M4A, AAC… o MP3 raros).
         try:
-            return AudioFile(path).read(streams=0, samplerate=samplerate, channels=channels)
+            return decode_with_ffmpeg(path, samplerate, channels)
         except Exception as ffmpeg_error:
             raise RuntimeError(
                 f"No se pudo leer el audio ({soundfile_error}); "
                 f"tampoco con ffmpeg ({ffmpeg_error})."
             ) from ffmpeg_error
+
+
+def decode_with_ffmpeg(path: Path, samplerate: int, channels: int) -> Any:
+    """Decodifica la primera pista de audio con ffmpeg a float32 intercalado.
+
+    Solo necesita `ffmpeg` (sin `ffprobe`, que el lector de Demucs exige y que el motor
+    integrado no trae): en Docker viene de apt; en el motor que instala la app, de imageio-ffmpeg.
+    """
+    import subprocess
+
+    import numpy as np
+    import torch
+
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        raise RuntimeError("ffmpeg no está instalado")
+    result = subprocess.run(
+        [ffmpeg, "-v", "error", "-nostdin", "-i", str(path), "-map", "0:a:0",
+         "-f", "f32le", "-ac", str(channels), "-ar", str(samplerate), "-"],
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.decode("utf-8", "replace").strip().splitlines()
+        raise RuntimeError(detail[-1] if detail else f"código {result.returncode}")
+    data = np.frombuffer(result.stdout, dtype="<f4")
+    if data.size < channels:
+        raise RuntimeError("el archivo no tiene audio")
+    data = data[: data.size - data.size % channels].reshape(-1, channels).T
+    return torch.from_numpy(data.copy())
 
 
 def fit_length(data: Any, frames: int) -> Any:
@@ -325,12 +360,8 @@ def require(key: str) -> None:
         return
     label = catalog.MODEL_LABELS.get(key, key)
     if catalog.offline():
-        raise EngineSetupError(
-            f"El modelo {label} no está en la imagen del motor. Reconstrúyela con: npm run docker:engine"
-        )
-    raise EngineSetupError(
-        f"Faltan los paquetes para usar {label}. Instálalos con: pip install -r python/requirements.txt"
-    )
+        raise EngineSetupError(f"El modelo {label} no está instalado en el motor. {catalog.repair_hint()}")
+    raise EngineSetupError(f"Faltan los paquetes para usar {label}. {catalog.repair_hint()}")
 
 
 def available_qualities() -> dict[str, list[str]]:
@@ -575,8 +606,7 @@ def main() -> int:
         emit(
             "error",
             message=(
-                f"Falta el paquete «{error.name}» en {sys.executable}. "
-                "Instala las dependencias con: pip install -r python/requirements.txt"
+                f"Falta el paquete «{error.name}» en {sys.executable}. {catalog.repair_hint()}"
             ),
         )
     except Exception as error:  # noqa: BLE001 - todo error debe llegar a la app

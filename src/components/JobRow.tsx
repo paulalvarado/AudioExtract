@@ -19,6 +19,7 @@ const ERROR_TITLES: Record<AppError["kind"], string> = {
   input: "No se puede usar este archivo",
   busy: "Ya hay una separación en marcha",
   environment: "El motor de separación no está listo",
+  setup: "El motor de separación no está instalado",
   engine: "El motor no pudo separar la canción",
   cancelled: "Separación cancelada",
   library: "No se pudo guardar en la biblioteca",

@@ -1,13 +1,14 @@
 <#
 .SYNOPSIS
-  Prepara el motor Python local (alternativa a Docker) en Windows.
+  Prepara un motor Python a mano en Windows (para desarrollar). No hace falta para usar la app:
+  la app instala su propio motor integrado con un clic.
 
 .DESCRIPTION
   Crea un entorno virtual con PyTorch, Demucs y audio-separator donde la app lo
   busca: %LOCALAPPDATA%\com.audioextract.desktop\python\.venv (app instalada) o,
   con -Dev, python\.venv dentro del repositorio (desarrollo).
-  Después, usa la app con la variable de usuario AUDIOEXTRACT_ENGINE=python:
-    setx AUDIOEXTRACT_ENGINE python    (y vuelve a abrir la app)
+  La app usa este entorno si no hay motor integrado instalado. Para forzarlo aunque lo haya:
+    setx AUDIOEXTRACT_PYTHON <entorno>\Scripts\python.exe    (y vuelve a abrir la app)
 
 .PARAMETER Cuda
   Instala PyTorch con CUDA 12.8 (GPU NVIDIA). Sin este parámetro, solo CPU.
@@ -53,5 +54,5 @@ if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
 
 Write-Host "`nComprobando el motor…"
 & $py (Join-Path $root "python\separate.py") --check
-Write-Host "`nListo. Para que la app use este motor: setx AUDIOEXTRACT_ENGINE python  (y vuelve a abrirla)." -ForegroundColor Green
+Write-Host "`nListo. La app usa este entorno si no hay motor integrado; para forzarlo: setx AUDIOEXTRACT_PYTHON `"$py`"" -ForegroundColor Green
 Write-Host "La primera separación de cada calidad descarga sus modelos (hasta ~1 GB)."

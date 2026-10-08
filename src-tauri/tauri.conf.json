@@ -46,6 +46,7 @@
     "shortDescription": "Separa canciones en pistas por instrumento, en tu propio equipo",
     "longDescription": "AudioExtract separa una canción en voces, batería, bajo, guitarra, piano, viento y otros con modelos abiertos (Demucs, BS-RoFormer, UVR) que se ejecutan en local. Incluye un mezclador con transposición por semitonos, exportación a WAV o MP3 y una biblioteca de extracciones.",
     "createUpdaterArtifacts": false,
+    "externalBin": ["binaries/uv"],
     "resources": {
       "../LICENSE": "LICENSE",
       "../python/separate.py": "python/separate.py",
@@ -53,6 +54,7 @@
       "../python/catalog.py": "python/catalog.py",
       "../python/requirements.txt": "python/requirements.txt",
       "../python/requirements-transcription.txt": "python/requirements-transcription.txt",
+      "../python/locks/*.txt": "python/locks/",
       "../python/wheels/*.whl": "python/wheels/"
     },
     "icon": [

@@ -1,9 +1,10 @@
 //! Motor de separación como proceso hijo.
 //!
 //! `python/separate.py` escribe en stdout una línea JSON por mensaje (progreso,
-//! dispositivo, capacidades, fin o error). Puede ejecutarse dentro de un
-//! contenedor Docker (`docker run …`, opción por defecto) o con un Python local;
-//! en ambos casos se lee stdout línea a línea mientras el proceso corre y cada
+//! dispositivo, capacidades, fin o error). Por defecto se ejecuta con el motor
+//! integrado (el Python que instala la propia app, ver `setup.rs`); también con
+//! otro Python local o dentro de un contenedor Docker (`AUDIOEXTRACT_ENGINE=docker`).
+//! En todos los casos se lee stdout línea a línea mientras el proceso corre y cada
 //! mensaje se traduce a un `SeparationEvent` para el frontend. stderr se drena en
 //! otro hilo (Torch es verboso y, si nadie lo lee, el pipe se llena y el hijo se
 //! bloquea); se guardan sus últimas líneas para explicar un fallo.
@@ -25,8 +26,9 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 
 use crate::error::AppError;
+use crate::setup::{self, EnginePaths, Managed};
 
-/// Formatos de entrada. soundfile lee casi todos; M4A necesita ffmpeg (incluido en la imagen).
+/// Formatos de entrada. soundfile lee casi todos; M4A necesita ffmpeg (lo traen el motor integrado y la imagen).
 pub const AUDIO_EXTENSIONS: &[&str] = &["mp3", "wav", "flac", "aiff", "aif", "ogg", "m4a"];
 /// Pistas que el motor entrega siempre.
 pub const BASE_STEMS: [&str; 4] = ["vocals", "drums", "bass", "other"];
@@ -43,13 +45,13 @@ const TRANSCRIBE_INPUT: &str = "/input/bass.wav";
 const SCRIPTS_MOUNT: &str = "/opt/audioextract/python";
 /// Ruedas de Python puro que la app instala junto a sus scripts (ver `catalog.use_bundled_wheels`).
 const WHEELS_DIR: &str = "wheels";
-const STDERR_TAIL_LINES: usize = 40;
-/// Arrancar el contenedor e inicializar CUDA tarda unos segundos; Docker Desktop recién abierto, bastante más.
+pub(crate) const STDERR_TAIL_LINES: usize = 40;
+/// Importar PyTorch e inicializar CUDA tarda unos segundos (la primera vez tras instalar, más);
+/// con Docker, arrancar el contenedor también, y Docker Desktop recién abierto, bastante más.
 const CHECK_TIMEOUT: Duration = Duration::from_secs(120);
-const REBUILD_HINT: &str = "Reconstruye la imagen del motor con: npm run docker:engine";
 
-/// Carpetas de la app instalada, para el motor `python`: los scripts van como
-/// recursos del instalador y el entorno virtual en la carpeta de datos de la app.
+/// Carpetas de la app instalada: los scripts del motor van como recursos del
+/// instalador y el motor integrado en la carpeta de datos locales de la app.
 static APP_DIRS: OnceLock<AppDirs> = OnceLock::new();
 
 struct AppDirs {
@@ -62,12 +64,22 @@ pub fn init_app_dirs(resources: Option<PathBuf>, data: Option<PathBuf>) {
     let _ = APP_DIRS.set(AppDirs { resources, data });
 }
 
-/// En macOS Docker no puede usar la GPU (Metal): allí el motor por defecto es Python.
+/// Carpeta de datos locales de la app (donde vive el motor integrado).
+pub(crate) fn app_data_dir() -> Option<PathBuf> {
+    APP_DIRS.get().and_then(|dirs| dirs.data.as_deref()).map(plain_path)
+}
+
+/// El motor integrado en todos los sistemas; Docker queda para quien lo pida con `AUDIOEXTRACT_ENGINE=docker`.
 fn default_engine() -> &'static str {
-    if cfg!(target_os = "macos") {
-        "python"
-    } else {
-        "docker"
+    "python"
+}
+
+/// Cómo arreglar un motor al que le falta algo, según su tipo (`EngineStatus::kind`).
+fn repair_hint(kind: &str) -> &'static str {
+    match kind {
+        "docker" => "Reconstruye la imagen del motor con: npm run docker:engine",
+        "app" => "Reinstala el motor desde Ajustes → Motor de separación.",
+        _ => "Actualiza las dependencias de tu Python con: pip install -r python/requirements.txt",
     }
 }
 
@@ -223,8 +235,11 @@ pub fn supported_extension(path: &Path) -> Option<String> {
 #[serde(rename_all = "camelCase")]
 pub struct EngineStatus {
     pub ready: bool,
-    /// `docker` o `python`.
+    /// `app` (motor integrado), `python` (otro Python local) o `docker`.
     pub kind: &'static str,
+    /// El motor integrado no está instalado o no está al día con esta versión de la app:
+    /// la interfaz ofrece instalarlo (o lo pone al día sola). Ver `setup.rs`.
+    pub needs_setup: bool,
     pub device: Option<String>,
     pub device_name: Option<String>,
     /// 1: motor antiguo (solo 4 pistas, Demucs). 2: instrumentos y calidades.
@@ -246,6 +261,7 @@ impl EngineStatus {
         Self {
             ready: false,
             kind,
+            needs_setup: false,
             device: None,
             device_name: None,
             protocol: 0,
@@ -291,7 +307,13 @@ impl EngineState {
     fn check(&self) -> EngineStatus {
         let engine = match Engine::from_env(false) {
             Ok(engine) => engine,
-            Err(err) => return EngineStatus::not_ready("docker", err.to_string()),
+            Err(AppError::SetupNeeded(problem)) => {
+                return EngineStatus {
+                    needs_setup: true,
+                    ..EngineStatus::not_ready("app", problem)
+                }
+            }
+            Err(err) => return EngineStatus::not_ready("app", err.to_string()),
         };
         match run_check(&engine) {
             Ok(status) => {
@@ -341,11 +363,17 @@ enum Engine {
         scripts: Option<PathBuf>,
     },
     /// Intérprete de Python local con las dependencias instaladas.
-    Python { interpreter: PathBuf, script: PathBuf },
+    Python {
+        interpreter: PathBuf,
+        script: PathBuf,
+        /// Carpetas del motor integrado (modelos, ffmpeg) si el intérprete es el suyo.
+        managed: Option<EnginePaths>,
+    },
 }
 
 impl Engine {
-    /// `AUDIOEXTRACT_ENGINE=docker` o `python` (por defecto, Docker; en macOS, Python).
+    /// `AUDIOEXTRACT_ENGINE=python` (por defecto: el motor integrado o el Python de `AUDIOEXTRACT_PYTHON`)
+    /// o `docker`.
     fn from_env(cpu_only: bool) -> Result<Self, AppError> {
         match env_or("AUDIOEXTRACT_ENGINE", default_engine()).to_ascii_lowercase().as_str() {
             "docker" => Ok(Self::Docker {
@@ -362,12 +390,16 @@ impl Engine {
                     .ok()
                     .and_then(|script| script.parent().map(Path::to_path_buf)),
             }),
-            "python" => Ok(Self::Python {
-                interpreter: resolve_python(),
-                script: resolve_script()?,
-            }),
+            "python" => {
+                let (interpreter, managed) = resolve_python()?;
+                Ok(Self::Python {
+                    interpreter,
+                    script: resolve_script()?,
+                    managed,
+                })
+            }
             other => Err(AppError::Environment(format!(
-                "AUDIOEXTRACT_ENGINE=«{other}» no es válido: usa «docker» o «python»."
+                "AUDIOEXTRACT_ENGINE=«{other}» no es válido: usa «python» o «docker»."
             ))),
         }
     }
@@ -375,8 +407,13 @@ impl Engine {
     fn kind(&self) -> &'static str {
         match self {
             Self::Docker { .. } => "docker",
-            Self::Python { .. } => "python",
+            Self::Python { managed: Some(_), .. } => "app",
+            Self::Python { managed: None, .. } => "python",
         }
+    }
+
+    fn repair_hint(&self) -> &'static str {
+        repair_hint(self.kind())
     }
 
     fn uses_gpu(&self) -> bool {
@@ -395,7 +432,8 @@ impl Engine {
             Self::Docker { .. } => {
                 "Instala Docker Desktop o define AUDIOEXTRACT_DOCKER con la ruta de docker.exe."
             }
-            Self::Python { .. } => {
+            Self::Python { managed: Some(_), .. } => "Reinstala el motor desde Ajustes → Motor de separación.",
+            Self::Python { managed: None, .. } => {
                 "Define AUDIOEXTRACT_PYTHON con la ruta del intérprete que tiene las dependencias instaladas."
             }
         }
@@ -459,6 +497,7 @@ impl Engine {
             Self::Python {
                 interpreter,
                 script: separate,
+                managed,
             } => {
                 let path = match script {
                     Script::Separate => separate.clone(),
@@ -475,6 +514,10 @@ impl Engine {
                     .env("PYTHONIOENCODING", "utf-8")
                     // En Apple Silicon, lo que MPS no soporta cae a CPU en vez de fallar.
                     .env("PYTORCH_ENABLE_MPS_FALLBACK", "1");
+                if let Some(paths) = managed {
+                    // Sin red: solo los modelos que se descargaron al instalar el motor.
+                    paths.configure(&mut command, true);
+                }
                 command
             }
         }
@@ -555,12 +598,14 @@ impl Engine {
 
         if mentions(&["unrecognized arguments: --instruments", "unrecognized arguments: --quality"]) {
             return Some(format!(
-                "El motor instalado es de una versión anterior y solo separa voces, batería, bajo y otros. {REBUILD_HINT}"
+                "El motor instalado es de una versión anterior y solo separa voces, batería, bajo y otros. {}",
+                self.repair_hint()
             ));
         }
         if text.contains("can't open file") && text.contains(TRANSCRIBE_SCRIPT) {
             return Some(format!(
-                "El motor instalado es de una versión anterior y no transcribe el bajo para el modo práctica. {REBUILD_HINT}"
+                "El motor instalado es de una versión anterior y no transcribe el bajo para el modo práctica. {}",
+                self.repair_hint()
             ));
         }
         let Self::Docker { image, .. } = self else {
@@ -670,6 +715,7 @@ fn parse_check_output(kind: &'static str, stdout: &str) -> Option<EngineStatus> 
     let mut status = EngineStatus {
         ready: true,
         kind,
+        needs_setup: false,
         device: None,
         device_name: None,
         protocol: 1,
@@ -710,11 +756,12 @@ fn parse_check_output(kind: &'static str, stdout: &str) -> Option<EngineStatus> 
     status.device.as_ref()?;
     if status.protocol < 2 {
         status.notes.push(format!(
-            "El motor instalado es de una versión anterior: solo separa voces, batería, bajo y otros. {REBUILD_HINT}"
+            "El motor instalado es de una versión anterior: solo separa voces, batería, bajo y otros. {}",
+            repair_hint(kind)
         ));
     } else if status.qualities.is_empty() {
         status.ready = false;
-        status.problem = Some(format!("El motor no tiene ningún modelo de separación. {REBUILD_HINT}"));
+        status.problem = Some(format!("El motor no tiene ningún modelo de separación. {}", repair_hint(kind)));
     }
     Some(status)
 }
@@ -856,15 +903,16 @@ pub fn run(
     job: &SeparationJob,
     mut emit: impl FnMut(SeparationEvent),
 ) -> Result<SeparationOutput, AppError> {
+    let engine = Engine::from_env(engine_state.cpu_only.load(Ordering::SeqCst))?;
     let known_protocol = engine_state.cached().filter(|status| status.ready).map(|status| status.protocol);
     if known_protocol == Some(1) && job.needs_extended_engine() {
         return Err(AppError::Environment(format!(
-            "El motor instalado es de una versión anterior: solo separa voces, batería, bajo y otros en calidad rápida. {REBUILD_HINT}"
+            "El motor instalado es de una versión anterior: solo separa voces, batería, bajo y otros en calidad rápida. {}",
+            engine.repair_hint()
         )));
     }
     let extended = known_protocol.map_or(job.needs_extended_engine(), |protocol| protocol >= 2);
 
-    let engine = Engine::from_env(engine_state.cpu_only.load(Ordering::SeqCst))?;
     let container = container_name(&engine, "audioextract");
     let command = engine.separation_command(job, container.as_ref().map(|(_, name)| name.as_str()), extended);
     let Finished {
@@ -1033,7 +1081,7 @@ fn playable_notes(mut notes: Vec<NoteEvent>) -> Vec<NoteEvent> {
     notes
 }
 
-fn drain_stderr(stderr: impl Read + Send + 'static) -> JoinHandle<Vec<String>> {
+pub(crate) fn drain_stderr(stderr: impl Read + Send + 'static) -> JoinHandle<Vec<String>> {
     thread::spawn(move || {
         let mut reader = BufReader::new(stderr);
         let mut buf = Vec::with_capacity(512);
@@ -1060,7 +1108,7 @@ fn drain_stderr(stderr: impl Read + Send + 'static) -> JoinHandle<Vec<String>> {
     })
 }
 
-fn describe_failure(status: Option<ExitStatus>, stderr_tail: &[String]) -> String {
+pub(crate) fn describe_failure(status: Option<ExitStatus>, stderr_tail: &[String]) -> String {
     let code = match status.and_then(|s| s.code()) {
         Some(code) => format!("código {code}"),
         None => "terminado sin código de salida".to_owned(),
@@ -1076,7 +1124,7 @@ fn describe_failure(status: Option<ExitStatus>, stderr_tail: &[String]) -> Strin
 
 /// `origen:destino[:ro]` para `docker run -v`, sin pasar por UTF-8 (rutas de Windows arbitrarias).
 fn bind_spec(host: &Path, target: &str, read_only: bool) -> OsString {
-    let mut spec = OsString::from(docker_host_path(host));
+    let mut spec = OsString::from(plain_path(host));
     spec.push(":");
     spec.push(target);
     if read_only {
@@ -1085,10 +1133,10 @@ fn bind_spec(host: &Path, target: &str, read_only: bool) -> OsString {
     spec
 }
 
-/// Ruta que entiende `docker -v`. En Windows, Tauri da la carpeta de recursos en forma «verbatim»
-/// (`\\?\C:\…`) y Docker la rechaza («too many colons»): se pasa a la forma normal (`C:\…`,
-/// `\\servidor\recurso\…`). Cualquier otra ruta queda igual.
-fn docker_host_path(path: &Path) -> PathBuf {
+/// Ruta en forma normal. En Windows, Tauri da la carpeta de recursos en forma «verbatim»
+/// (`\\?\C:\…`), que Docker rechaza («too many colons») y que no todos los programas entienden:
+/// se pasa a la forma normal (`C:\…`, `\\servidor\recurso\…`). Cualquier otra ruta queda igual.
+pub(crate) fn plain_path(path: &Path) -> PathBuf {
     use std::path::Prefix;
 
     let mut components = path.components();
@@ -1131,7 +1179,7 @@ fn kill_container(cli: &Path, name: &str) {
 }
 
 /// Sin esto, en Windows cada proceso hijo abre una ventana de consola.
-fn hide_console(command: &mut Command) {
+pub(crate) fn hide_console(command: &mut Command) {
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -1151,7 +1199,7 @@ fn project_python_dir() -> PathBuf {
         .join("python")
 }
 
-fn venv_python(venv: &Path) -> PathBuf {
+pub(crate) fn venv_python(venv: &Path) -> PathBuf {
     if cfg!(windows) {
         venv.join("Scripts").join("python.exe")
     } else {
@@ -1159,31 +1207,39 @@ fn venv_python(venv: &Path) -> PathBuf {
     }
 }
 
-/// Orden: `AUDIOEXTRACT_PYTHON` → entorno de la app (lo crea scripts/setup-python) →
-/// `python/.venv` del repo → `python`/`python3` del PATH.
-fn resolve_python() -> PathBuf {
+/// Orden: `AUDIOEXTRACT_PYTHON` → motor integrado (`setup.rs`) → entornos creados a mano para
+/// desarrollar (`python/.venv` del repo o el de scripts/setup-python). Sin ninguno, hay que
+/// instalar el motor integrado (`AppError::SetupNeeded`); la interfaz lo ofrece.
+fn resolve_python() -> Result<(PathBuf, Option<EnginePaths>), AppError> {
     if let Some(explicit) = env::var_os("AUDIOEXTRACT_PYTHON") {
-        return PathBuf::from(explicit);
+        return Ok((PathBuf::from(explicit), None));
     }
 
-    let app_venv = APP_DIRS
-        .get()
-        .and_then(|dirs| dirs.data.as_ref())
-        .map(|data| venv_python(&data.join("python").join(".venv")));
-    let candidates = app_venv
-        .into_iter()
-        .chain([venv_python(&project_python_dir().join(".venv"))]);
-    for candidate in candidates {
-        if candidate.is_file() {
-            return candidate;
+    match setup::managed() {
+        Managed::Ready(paths) => return Ok((paths.interpreter(), Some(paths))),
+        Managed::Outdated => {
+            return Err(AppError::SetupNeeded(
+                "El motor de separación se está poniendo al día para esta versión de la app.".to_owned(),
+            ))
         }
+        Managed::Missing => {}
     }
 
-    PathBuf::from(if cfg!(windows) { "python" } else { "python3" })
+    let manual = [
+        Some(venv_python(&project_python_dir().join(".venv"))),
+        app_data_dir().map(|data| venv_python(&data.join("python").join(".venv"))),
+    ];
+    if let Some(found) = manual.into_iter().flatten().find(|candidate| candidate.is_file()) {
+        return Ok((found, None));
+    }
+
+    Err(AppError::SetupNeeded(
+        "El motor de separación todavía no está instalado en este equipo.".to_owned(),
+    ))
 }
 
 /// Orden: `AUDIOEXTRACT_SCRIPT` → recursos de la app instalada → `python/` del repo.
-fn resolve_script() -> Result<PathBuf, AppError> {
+pub(crate) fn resolve_script() -> Result<PathBuf, AppError> {
     if let Some(explicit) = env::var_os("AUDIOEXTRACT_SCRIPT") {
         let script = PathBuf::from(explicit);
         return if script.is_file() {
@@ -1459,6 +1515,7 @@ mod tests {
         let python = Engine::Python {
             interpreter: "python".into(),
             script: separate.clone(),
+            managed: None,
         };
         let args = args_of(&python.transcription_command(bass, None));
         assert_eq!(args[0], "-u");
@@ -1496,11 +1553,11 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
-    fn gives_docker_plain_windows_paths() {
+    fn gives_plain_windows_paths() {
         // Así devuelve Tauri la carpeta de recursos de la app instalada.
         let installed = Path::new(r"\\?\C:\Users\ana\AppData\Local\AudioExtract\python");
         assert_eq!(
-            docker_host_path(installed),
+            plain_path(installed),
             PathBuf::from(r"C:\Users\ana\AppData\Local\AudioExtract\python")
         );
         assert_eq!(
@@ -1508,26 +1565,31 @@ mod tests {
             OsString::from(r"C:\Users\ana\AppData\Local\AudioExtract\python:/opt/audioextract/python:ro")
         );
         assert_eq!(
-            docker_host_path(Path::new(r"\\?\UNC\nas\musica\AudioExtract")),
+            plain_path(Path::new(r"\\?\UNC\nas\musica\AudioExtract")),
             PathBuf::from(r"\\nas\musica\AudioExtract")
         );
         let plain = Path::new(r"D:\Música\Canción.mp3");
-        assert_eq!(docker_host_path(plain), plain);
+        assert_eq!(plain_path(plain), plain);
     }
 
-    /// De punta a punta con Docker, la imagen del motor y una app instalada; no corre en la CI:
+    /// De punta a punta con la app instalada y su motor (el integrado, o Docker con
+    /// `AUDIOEXTRACT_ENGINE=docker`); no corre en la CI:
     ///
     /// ```text
     /// set AUDIOEXTRACT_E2E_RESOURCES=\\?\C:\Users\<usuario>\AppData\Local\AudioExtract
+    /// set AUDIOEXTRACT_E2E_DATA=C:\Users\<usuario>\AppData\Local\com.audioextract.desktop
     /// set AUDIOEXTRACT_E2E_BASS=C:\Users\<usuario>\Music\AudioExtract\<canción>\bass.wav
-    /// audioextract-tests.exe --ignored e2e
+    /// audioextract-tests.exe --ignored e2e_check
     /// ```
     #[test]
-    #[ignore = "necesita Docker, la imagen del motor y la app instalada"]
+    #[ignore = "necesita el motor y la app instalada"]
     fn e2e_check_and_transcription_with_installed_scripts() {
         let resources = env::var_os("AUDIOEXTRACT_E2E_RESOURCES").expect("define AUDIOEXTRACT_E2E_RESOURCES");
         let bass = env::var_os("AUDIOEXTRACT_E2E_BASS").expect("define AUDIOEXTRACT_E2E_BASS");
-        init_app_dirs(Some(PathBuf::from(resources)), None);
+        init_app_dirs(
+            Some(PathBuf::from(resources)),
+            env::var_os("AUDIOEXTRACT_E2E_DATA").map(PathBuf::from),
+        );
 
         let status = EngineState::default().refresh(true);
         assert!(status.ready, "el motor no está listo: {:?}", status.problem);
@@ -1543,6 +1605,7 @@ mod tests {
         let python = Engine::Python {
             interpreter: "python".into(),
             script: separate.clone(),
+            managed: None,
         };
         let command = python.transcription_command(Path::new("/music/bass.wav"), None);
         let wheels = command

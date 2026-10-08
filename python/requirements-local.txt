@@ -1,0 +1,3 @@
+# Solo para el motor que instala la app (sin Docker): ffmpeg como ejecutable dentro de una
+# rueda, para leer M4A y para audio-separator. La imagen Docker lo instala con apt.
+imageio-ffmpeg==0.6.0

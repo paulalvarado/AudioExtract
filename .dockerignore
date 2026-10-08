@@ -11,3 +11,4 @@ python/.venv
 .impeccable
 docs
 *.local
+src-tauri/binaries

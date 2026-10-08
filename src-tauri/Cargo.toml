@@ -1,6 +1,6 @@
 [package]
 name = "audioextract"
-version = "1.0.0"
+version = "1.1.0"
 description = "Separación local de canciones en pistas por instrumento"
 authors = ["Paúl Pérez"]
 license = "GPL-3.0-or-later"
@@ -30,6 +30,13 @@ serde_json = "1"
 thiserror = "2"
 # Borrar extracciones de la biblioteca enviándolas a la papelera del sistema.
 trash = "5"
+
+# Memoria y espacio libre para elegir e instalar el motor integrado (setup.rs).
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Storage_FileSystem", "Win32_System_SystemInformation"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
 
 [profile.release]
 codegen-units = 1

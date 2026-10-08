@@ -9,6 +9,8 @@ import {
   type OptionalStem,
   type SeparationEvent,
   type SeparationRequest,
+  type SetupEvent,
+  type SetupPlan,
   type StemId,
 } from "../types";
 import { DEMO_SAMPLE_RATE, synthBassNotes, synthStem } from "./synth";
@@ -18,6 +20,7 @@ import { DEMO_SAMPLE_RATE, synthBassNotes, synthStem } from "./synth";
  * ni motor. Simula el backend en memoria y sintetiza las pistas. Parámetros de la URL:
  *   ?empty          biblioteca vacía (primer arranque)
  *   ?engine=down    motor no disponible · ?engine=old  motor v1 · ?engine=cpu  sin GPU
+ *   ?engine=setup   motor sin instalar (también setup-cpu, setup-error, setup-space y update)
  *   ?update         hay una actualización disponible
  *   ?tab=error      la transcripción del bajo (modo práctica) falla
  */
@@ -77,10 +80,92 @@ const library: LibraryItem[] = params.has("empty")
       }),
     ];
 
+const engineParam = params.get("engine") ?? "";
+let engineInstalled = !engineParam.startsWith("setup") && engineParam !== "update";
+let setupCancelled = false;
+let setupFailures = engineParam === "setup-error" ? 1 : 0;
+const GB = 1024 ** 3;
+
+function setupPlan(): SetupPlan {
+  const cpu = engineParam === "setup-cpu";
+  return {
+    hardware: {
+      os: "windows",
+      arch: "x86_64",
+      cpuThreads: 12,
+      memoryBytes: (cpu ? 8 : 32) * GB,
+      gpus: cpu
+        ? []
+        : [{ name: "NVIDIA GeForce RTX 3060", memoryBytes: 12 * GB, driver: "581.29", computeCapability: "8.6" }],
+    },
+    variant: cpu ? "windows-cpu" : "windows-cuda",
+    accelerator: cpu ? "cpu" : "cuda",
+    reason: cpu ? "No hay una GPU NVIDIA: separará con el procesador, más despacio." : "Separará con la GPU (CUDA 12.8).",
+    notes: cpu ? ["Con menos de 8 GB de memoria, la calidad máxima puede quedarse sin memoria: usa la rápida."] : [],
+    downloadBytes: (cpu ? 1.79 : 4.44) * GB,
+    installedBytes: (cpu ? 1.95 : 5.89) * GB,
+    requiredBytes: (cpu ? 5.5 : 9.4) * GB,
+    freeBytes: (engineParam === "setup-space" ? 6.2 : 43.7) * GB,
+    installed:
+      engineInstalled || engineParam === "update"
+        ? { variant: "windows-cuda", models: [], installedAt: Date.now() - 86_400_000, appVersion: "1.0.0" }
+        : null,
+    upToDate: engineInstalled,
+    dir: `${LIBRARY_DIR.replace("Music\\AudioExtract", "AppData\\Local\\com.audioextract.desktop\\engine")}`,
+  };
+}
+
+async function installEngine(channel: Channel<SetupEvent>): Promise<EngineStatus> {
+  setupCancelled = false;
+  const send = (event: SetupEvent) => channel.onmessage(event);
+  const update = engineParam === "update";
+  const steps: [SetupEvent & { event: "step" }, number, number | null][] = [
+    [{ event: "step", data: { step: "python" } }, 8, 0.07 * GB],
+    [{ event: "step", data: { step: "packages" } }, update ? 10 : 40, update ? null : 7.45 * GB],
+    [{ event: "step", data: { step: "ffmpeg" } }, 2, null],
+    [{ event: "step", data: { step: "models" } }, update ? 3 : 20, 0.99 * GB],
+    [{ event: "step", data: { step: "check" } }, 10, null],
+  ];
+  const weights = [2, update ? 8 : 77, 1, update ? 3 : 18, 2];
+  const all = weights.reduce((a, b) => a + b, 0);
+  let before = 0;
+  for (const [index, [step, ticks, total]] of steps.entries()) {
+    send(step);
+    for (let tick = 0; tick <= ticks; tick++) {
+      if (setupCancelled) throw { kind: "cancelled", message: "Operación cancelada" };
+      if (index === 1 && tick === Math.floor(ticks * 0.4) && setupFailures > 0) {
+        setupFailures--;
+        throw {
+          kind: "setup",
+          message:
+            "No se pudo descargar. Comprueba la conexión a internet y vuelve a intentarlo: lo ya descargado no se repite.\n\n" +
+            "error: Failed to fetch: `https://download.pytorch.org/whl/cu128/torch-2.8.0%2Bcu128-cp312-cp312-win_amd64.whl`\n" +
+            "  Caused by: error sending request",
+        };
+      }
+      const fraction = Math.min(tick / ticks, 0.97);
+      send({
+        event: "progress",
+        data: {
+          percent: ((before + weights[index] * fraction) / all) * 100,
+          bytes: total === null ? null : total * fraction,
+          total,
+        },
+      });
+      await wait(150);
+    }
+    before += weights[index];
+  }
+  send({ event: "progress", data: { percent: 100, bytes: null, total: null } });
+  engineInstalled = true;
+  return engineStatus();
+}
+
 function engineStatus(): EngineStatus {
   const base: EngineStatus = {
     ready: true,
-    kind: "docker",
+    kind: "app",
+    needsSetup: false,
     device: "cuda",
     deviceName: "NVIDIA GeForce RTX 3060",
     protocol: 2,
@@ -92,7 +177,25 @@ function engineStatus(): EngineStatus {
     notes: ["Python 3.12.14 · torch 2.8.0+cu128 · CUDA 12.8"],
     checkedAt: Date.now(),
   };
-  switch (params.get("engine")) {
+  if (!engineInstalled) {
+    return {
+      ...base,
+      ready: false,
+      needsSetup: true,
+      device: null,
+      deviceName: null,
+      protocol: 0,
+      version: null,
+      qualities: {},
+      wind: false,
+      transcription: false,
+      notes: [],
+      problem: engineParam === "update"
+        ? "El motor de separación se está poniendo al día para esta versión de la app."
+        : "El motor de separación todavía no está instalado en este equipo.",
+    };
+  }
+  switch (engineParam) {
     case "down":
       return {
         ...base,
@@ -104,7 +207,7 @@ function engineStatus(): EngineStatus {
         wind: false,
         transcription: false,
         notes: [],
-        problem: "Docker Desktop no está en marcha. Ábrelo, espera a que arranque y vuelve a intentarlo.",
+        problem: "El motor no respondió a tiempo. Comprueba de nuevo en unos segundos.",
       };
     case "old":
       return {
@@ -121,7 +224,7 @@ function engineStatus(): EngineStatus {
         ...base,
         device: "cpu",
         deviceName: "x86_64",
-        notes: ["Docker no puede usar una GPU NVIDIA en este equipo: se separará con la CPU."],
+        notes: [],
       };
     default:
       return base;
@@ -144,7 +247,7 @@ async function generateBassTab(id: string) {
     if (params.get("tab") === "error") {
       throw {
         kind: "environment",
-        message: "Docker Desktop no está en marcha. Ábrelo, espera a que arranque y vuelve a intentarlo.",
+        message: "El motor terminó con error (código 1):\nRuntimeError: no se pudo cargar el modelo de Basic Pitch",
       };
     }
     transcribed.add(id);
@@ -227,6 +330,14 @@ export function installMocks(): void {
             await wait(1200);
           }
           return engineStatus();
+        case "engine_setup_plan":
+          await wait(400);
+          return setupPlan();
+        case "engine_setup_start":
+          return installEngine(args.onEvent as Channel<SetupEvent>);
+        case "engine_setup_cancel":
+          setupCancelled = true;
+          return true;
         case "library_list":
           return { dir: LIBRARY_DIR, isDefault: true, items: [...library] };
         case "library_rename": {

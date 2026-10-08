@@ -4,6 +4,7 @@ mod error;
 mod export;
 mod library;
 mod settings;
+mod setup;
 
 use std::fs;
 
@@ -13,6 +14,7 @@ use crate::engine::{EngineState, SeparationState, TranscriptionState};
 use crate::export::ExportState;
 use crate::library::Library;
 use crate::settings::Settings;
+use crate::setup::SetupState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -24,6 +26,7 @@ pub fn run() {
         .manage(SeparationState::default())
         .manage(TranscriptionState::default())
         .manage(EngineState::default())
+        .manage(SetupState::default())
         .manage(ExportState::default())
         .setup(|app| {
             engine::init_app_dirs(app.path().resource_dir().ok(), app.path().app_local_data_dir().ok());
@@ -35,7 +38,7 @@ pub fn run() {
             app.asset_protocol_scope().allow_directory(library.root(), true)?;
             app.manage(settings);
 
-            // `--check` tarda unos segundos (arrancar el contenedor, inicializar CUDA):
+            // `--check` tarda unos segundos (importar PyTorch, inicializar CUDA):
             // se lanza ya para que el estado del motor esté listo al abrir la ventana.
             let handle = app.handle().clone();
             tauri::async_runtime::spawn_blocking(move || {
@@ -45,6 +48,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::engine_status,
+            commands::engine_setup_plan,
+            commands::engine_setup_start,
+            commands::engine_setup_cancel,
             commands::separate,
             commands::cancel_separation,
             commands::generate_bass_tab,
@@ -64,8 +70,10 @@ pub fn run() {
         .expect("error al inicializar AudioExtract");
 
     app.run(|handle, event| {
-        // Si se cierra la app a mitad de una separación o transcripción, no dejamos el motor huérfano.
+        // Si se cierra la app a mitad de una separación, una transcripción o la instalación del
+        // motor, no dejamos procesos huérfanos.
         if let RunEvent::Exit = event {
+            handle.state::<SetupState>().cancel();
             handle.state::<SeparationState>().cancel();
             handle.state::<TranscriptionState>().cancel();
         }

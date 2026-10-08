@@ -51,8 +51,8 @@ COPY . .
 
 FROM toolchain AS build
 # Cachés de BuildKit: las recompilaciones solo rehacen lo que cambió.
-# Antes de exportar se comprueba que el instalador lleva el motor de la app (scripts y ruedas de
-# Python): sin eso, una versión nueva no funcionaría con la imagen del motor que ya hay instalada.
+# Antes de exportar se comprueba que el instalador lleva el motor de la app: scripts, ruedas, los
+# bloqueos del motor integrado y uv, con el que la app lo instala en el equipo (sin eso no separaría).
 # Solo se exporta el instalador de esta versión (la caché guarda también los de versiones anteriores).
 # /root/.cache/tauri guarda las utilidades de NSIS que Tauri baja de GitHub: sin caché las descargaba en
 # cada construcción, y esa descarga no tiene tiempo de espera (una vez dejó la construcción colgada).
@@ -63,7 +63,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/src-tauri/target \
     npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc --bundles nsis \
  && nsi="$(find src-tauri/target/x86_64-pc-windows-msvc/release/nsis -name '*.nsi' | head -n1)" \
- && for file in separate.py transcribe.py catalog.py basic_pitch-0.4.0-py2.py3-none-any.whl; do \
+ && for file in separate.py transcribe.py catalog.py basic_pitch-0.4.0-py2.py3-none-any.whl windows-cuda.txt windows-cpu.txt uv.exe; do \
       grep -q "$file" "$nsi" || { echo "El instalador no incluye $file" >&2; exit 1; }; \
     done \
  && version="$(node -p "require('./package.json').version")" \
@@ -74,12 +74,13 @@ FROM scratch AS export
 COPY --from=build /out/ /
 
 FROM toolchain AS test-build
-# `generate_context!` embebe ../dist al compilar, así que el frontend va primero.
+# `generate_context!` embebe ../dist al compilar, así que el frontend va primero. El triple hace que
+# `npm run build` prepare uv para Windows (tauri-build exige el binario externo del destino).
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/root/.cache/cargo-xwin \
     --mount=type=cache,target=/src/src-tauri/target \
-    npm run build \
+    TAURI_ENV_TARGET_TRIPLE=x86_64-pc-windows-msvc npm run build \
  && cd src-tauri \
  && cargo xwin test --no-run --lib --target x86_64-pc-windows-msvc \
  && mkdir -p /out \
