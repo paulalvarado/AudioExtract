@@ -1,0 +1,59 @@
+# Publica una versión al empujar una etiqueta v* (p. ej. v0.3.0):
+#   · compila el instalador de Windows (NSIS) y la app de macOS (Apple Silicon),
+#   · los adjunta a una GitHub Release,
+#   · y, si están los secretos de firma, genera latest.json para el actualizador integrado.
+#
+# Preparación (una vez): npm run updater:setup -- --repo <usuario>/<repositorio>
+# y añade los secretos TAURI_SIGNING_PRIVATE_KEY y TAURI_SIGNING_PRIVATE_KEY_PASSWORD.
+# Detalles en docs/ACTUALIZACIONES.md.
+name: Publicar versión
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ""
+          - platform: macos-latest
+            args: "--target aarch64-apple-darwin"
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: AudioExtract ${{ github.ref_name }}
+          releaseBody: >-
+            Novedades en CHANGELOG.md. Si ya tienes AudioExtract instalado, ejecuta el instalador
+            nuevo encima (conserva tu biblioteca) o actualiza desde la propia app.
+            El motor de separación se construye aparte: npm run docker:engine (ver README).
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
+          # Sin secretos de firma se publica igual, pero sin artefactos para el actualizador.
+          args: ${{ matrix.args }} ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' && '--config src-tauri/tauri.release.conf.json' || '' }}

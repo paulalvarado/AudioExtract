@@ -1,0 +1,228 @@
+@import "tailwindcss";
+
+@theme static {
+  --font-sans: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "Cascadia Mono", "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+
+  --color-surface: oklch(0.17 0.006 260);
+  --color-panel: oklch(0.205 0.007 260);
+  --color-raised: oklch(0.25 0.008 260);
+  --color-line: oklch(0.3 0.008 260);
+  --color-accent: oklch(0.78 0.14 190);
+  --color-danger: oklch(0.7 0.18 25);
+  --color-warning: oklch(0.84 0.13 85);
+
+  /* Texto: ink-2 e ink-3 superan 4.5:1 sobre surface, panel y raised; ink-4 solo para lo decorativo o deshabilitado. */
+  --color-ink: oklch(0.96 0.003 260);
+  --color-ink-2: oklch(0.82 0.008 260);
+  --color-ink-3: oklch(0.67 0.01 260);
+  --color-ink-4: oklch(0.47 0.01 260);
+
+  /* Un matiz por instrumento, repartidos por el círculo cromático con luminosidad pareja. */
+  --color-stem-vocals: oklch(0.74 0.17 355);
+  --color-stem-drums: oklch(0.82 0.15 78);
+  --color-stem-bass: oklch(0.7 0.16 290);
+  --color-stem-guitar: oklch(0.74 0.15 42);
+  --color-stem-piano: oklch(0.76 0.12 240);
+  --color-stem-wind: oklch(0.84 0.16 122);
+  --color-stem-other: oklch(0.77 0.13 170);
+}
+
+:root {
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  font-synthesis: none;
+  accent-color: var(--color-accent);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  user-select: none;
+  cursor: default;
+}
+
+::selection {
+  background: color-mix(in oklch, var(--color-accent) 35%, transparent);
+  color: var(--color-ink);
+}
+
+/* Barras de desplazamiento finas con la paleta de la app. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: var(--color-line) padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-4) padding-box;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+input::placeholder {
+  color: var(--color-ink-3);
+}
+
+@layer components {
+  /* Capa de forma de onda ya reproducida: se recorta con --progress (0–1) del contenedor. */
+  .played {
+    clip-path: inset(0 calc(100% - var(--progress, 0) * 100%) 0 0);
+  }
+
+  /* Fader horizontal: la parte recorrida se pinta con --fill (0–100%) y --stem. */
+  .fader {
+    --track-h: 4px;
+    --thumb: 14px;
+    appearance: none;
+    background: transparent;
+    width: 100%;
+    height: var(--thumb);
+    cursor: pointer;
+  }
+  .fader::-webkit-slider-runnable-track {
+    height: var(--track-h);
+    border-radius: 999px;
+    background: linear-gradient(
+      to right,
+      var(--stem, var(--color-accent)) var(--fill, 0%),
+      var(--color-line) var(--fill, 0%)
+    );
+  }
+  .fader::-moz-range-track {
+    height: var(--track-h);
+    border-radius: 999px;
+    background: var(--color-line);
+  }
+  .fader::-moz-range-progress {
+    height: var(--track-h);
+    border-radius: 999px;
+    background: var(--stem, var(--color-accent));
+  }
+  .fader::-webkit-slider-thumb {
+    appearance: none;
+    width: var(--thumb);
+    height: var(--thumb);
+    margin-top: calc((var(--track-h) - var(--thumb)) / 2);
+    border-radius: 999px;
+    background: var(--color-ink);
+    box-shadow: 0 0 0 3px var(--color-panel);
+    transition: transform 120ms ease;
+  }
+  .fader::-moz-range-thumb {
+    width: var(--thumb);
+    height: var(--thumb);
+    border: 0;
+    border-radius: 999px;
+    background: var(--color-ink);
+    box-shadow: 0 0 0 3px var(--color-panel);
+  }
+  .fader:hover::-webkit-slider-thumb,
+  .fader:active::-webkit-slider-thumb {
+    transform: scale(1.15);
+  }
+  .fader:focus-visible {
+    outline: none;
+  }
+  .fader:focus-visible::-webkit-slider-thumb {
+    box-shadow:
+      0 0 0 3px var(--color-panel),
+      0 0 0 5px var(--color-accent);
+  }
+  .fader:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Ecualizador de la fila que suena: las mismas barras redondeadas del icono de la app. */
+  .eq-bar {
+    transform-origin: bottom;
+    animation: eq-level 900ms ease-in-out infinite alternate;
+  }
+  .eq-bar:nth-child(2) {
+    animation-duration: 700ms;
+    animation-delay: -300ms;
+  }
+  .eq-bar:nth-child(3) {
+    animation-duration: 1100ms;
+    animation-delay: -600ms;
+  }
+  .eq-bar:nth-child(4) {
+    animation-duration: 800ms;
+    animation-delay: -150ms;
+  }
+
+  /* Panel lateral (ajustes, exportación). */
+  .sheet-enter {
+    animation: sheet-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Un aviso de espera que solo aparece si la espera es real: si el resultado llega
+     antes (p. ej., notas ya guardadas), no hay parpadeo. */
+  .reveal-late {
+    animation: reveal 160ms ease-out 220ms both;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes eq-level {
+  from {
+    transform: scaleY(0.3);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+  .eq-bar {
+    animation: none;
+  }
+}

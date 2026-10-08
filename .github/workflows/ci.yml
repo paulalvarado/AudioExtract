@@ -1,0 +1,55 @@
+# Comprobaciones en cada push y pull request: interfaz, backend y motor.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  interfaz:
+    name: Interfaz (TypeScript + build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  backend:
+    name: Backend (Rust en Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      # `generate_context!` incrusta dist/ al compilar: la interfaz va primero.
+      - run: npm run build
+      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --lib --tests -- -D warnings
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --lib
+
+  motor:
+    name: Motor (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m py_compile python/separate.py python/catalog.py python/transcribe.py

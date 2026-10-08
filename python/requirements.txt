@@ -1,0 +1,19 @@
+# Instala PyTorch ANTES que esto, con la variante de tu plataforma (ver docs/INSTALACION.md):
+#   Windows / Linux + NVIDIA:
+#     pip install torch==2.8.0 torchaudio==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
+#   macOS Apple Silicon:
+#     pip install torch torchaudio torchvision
+#
+# Después instala esto fijando las versiones de torch que ya tienes, o pip las
+# sustituirá por otras (audio-separator arrastra torchvision sin versión):
+#   pip freeze | grep -iE "^torch(audio|vision)?==" > torch-pins.txt     (PowerShell: Select-String)
+#   pip install -r requirements.txt -c torch-pins.txt
+#
+# scripts/setup-python.ps1 y scripts/setup-python.sh hacen todo esto por ti.
+demucs==4.0.1
+soundfile>=0.12.1
+# BS-RoFormer (calidad máxima) y el modelo de viento de UVR. [cpu] solo añade
+# onnxruntime, que audio-separator importa siempre; la inferencia usa PyTorch (y la GPU).
+audio-separator[cpu]==0.47.0
+# audio-separator lo importa pero no lo declara como dependencia.
+audioread>=3

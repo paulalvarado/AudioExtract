@@ -1,0 +1,17 @@
+# Finales de línea coherentes en Windows, macOS y Linux.
+* text=auto eol=lf
+
+# Scripts de Windows con CRLF; los de shell, siempre LF (bash falla con CRLF).
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.sh  text eol=lf
+
+# Binarios
+*.png  binary
+*.ico  binary
+*.icns binary
+*.exe  binary
+*.wav  binary
+*.mp3  binary
+*.wasm binary

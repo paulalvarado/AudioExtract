@@ -1,0 +1,34 @@
+# Node / Vite
+node_modules/
+dist/
+*.local
+*.log
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# Python
+python/.venv/
+__pycache__/
+*.pyc
+
+# Instaladores y tests compilados con Docker (se publican en GitHub Releases, no en git)
+release/
+
+# Claves de firma del actualizador: NUNCA en el repositorio (ver docs/ACTUALIZACIONES.md)
+*.key
+*.key.pub
+
+# Impeccable: se versionan los briefs de diseño; las capturas y rondas de decisión son locales
+.impeccable/questions/
+.impeccable/review/
+.impeccable/config.local.json
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
+
+# Ruedas de Python que lleva el instalador (las descarga scripts/vendor-wheels.mjs)
+python/wheels/

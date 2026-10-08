@@ -1,0 +1,13 @@
+node_modules
+dist
+release
+src-tauri/target
+src-tauri/gen/schemas
+python/.venv
+**/__pycache__
+.git
+.github
+.vscode
+.impeccable
+docs
+*.local

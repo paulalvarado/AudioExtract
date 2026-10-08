@@ -1,0 +1,680 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-04T20:11:32.405Z",
+  "title": "Design System: AudioExtract",
+  "extensions": {
+    "source": "src/index.css (@theme static); componentes en src/components",
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Turquesa de señal",
+        "canonical": "oklch(0.78 0.14 190)",
+        "cssVar": "--color-accent",
+        "tonalRamp": [
+          "oklch(0.15 0.14 190)",
+          "oklch(0.26 0.14 190)",
+          "oklch(0.38 0.14 190)",
+          "oklch(0.49 0.14 190)",
+          "oklch(0.61 0.14 190)",
+          "oklch(0.72 0.14 190)",
+          "oklch(0.84 0.14 190)",
+          "oklch(0.95 0.14 190)"
+        ]
+      },
+      "stem-vocals": {
+        "role": "categorical",
+        "displayName": "Rosa voz",
+        "canonical": "oklch(0.74 0.17 355)",
+        "cssVar": "--color-stem-vocals",
+        "tonalRamp": [
+          "oklch(0.15 0.17 355)",
+          "oklch(0.26 0.17 355)",
+          "oklch(0.38 0.17 355)",
+          "oklch(0.49 0.17 355)",
+          "oklch(0.61 0.17 355)",
+          "oklch(0.72 0.17 355)",
+          "oklch(0.84 0.17 355)",
+          "oklch(0.95 0.17 355)"
+        ]
+      },
+      "stem-drums": {
+        "role": "categorical",
+        "displayName": "Ámbar batería",
+        "canonical": "oklch(0.82 0.15 78)",
+        "cssVar": "--color-stem-drums",
+        "tonalRamp": [
+          "oklch(0.15 0.15 78)",
+          "oklch(0.26 0.15 78)",
+          "oklch(0.38 0.15 78)",
+          "oklch(0.49 0.15 78)",
+          "oklch(0.61 0.15 78)",
+          "oklch(0.72 0.15 78)",
+          "oklch(0.84 0.15 78)",
+          "oklch(0.95 0.15 78)"
+        ]
+      },
+      "stem-bass": {
+        "role": "categorical",
+        "displayName": "Violeta bajo",
+        "canonical": "oklch(0.7 0.16 290)",
+        "cssVar": "--color-stem-bass",
+        "tonalRamp": [
+          "oklch(0.15 0.16 290)",
+          "oklch(0.26 0.16 290)",
+          "oklch(0.38 0.16 290)",
+          "oklch(0.49 0.16 290)",
+          "oklch(0.61 0.16 290)",
+          "oklch(0.72 0.16 290)",
+          "oklch(0.84 0.16 290)",
+          "oklch(0.95 0.16 290)"
+        ]
+      },
+      "stem-guitar": {
+        "role": "categorical",
+        "displayName": "Coral guitarra",
+        "canonical": "oklch(0.74 0.15 42)",
+        "cssVar": "--color-stem-guitar",
+        "tonalRamp": [
+          "oklch(0.15 0.15 42)",
+          "oklch(0.26 0.15 42)",
+          "oklch(0.38 0.15 42)",
+          "oklch(0.49 0.15 42)",
+          "oklch(0.61 0.15 42)",
+          "oklch(0.72 0.15 42)",
+          "oklch(0.84 0.15 42)",
+          "oklch(0.95 0.15 42)"
+        ]
+      },
+      "stem-piano": {
+        "role": "categorical",
+        "displayName": "Celeste piano",
+        "canonical": "oklch(0.76 0.12 240)",
+        "cssVar": "--color-stem-piano",
+        "tonalRamp": [
+          "oklch(0.15 0.12 240)",
+          "oklch(0.26 0.12 240)",
+          "oklch(0.38 0.12 240)",
+          "oklch(0.49 0.12 240)",
+          "oklch(0.61 0.12 240)",
+          "oklch(0.72 0.12 240)",
+          "oklch(0.84 0.12 240)",
+          "oklch(0.95 0.12 240)"
+        ]
+      },
+      "stem-wind": {
+        "role": "categorical",
+        "displayName": "Lima viento",
+        "canonical": "oklch(0.84 0.16 122)",
+        "cssVar": "--color-stem-wind",
+        "tonalRamp": [
+          "oklch(0.15 0.16 122)",
+          "oklch(0.26 0.16 122)",
+          "oklch(0.38 0.16 122)",
+          "oklch(0.49 0.16 122)",
+          "oklch(0.61 0.16 122)",
+          "oklch(0.72 0.16 122)",
+          "oklch(0.84 0.16 122)",
+          "oklch(0.95 0.16 122)"
+        ]
+      },
+      "stem-other": {
+        "role": "categorical",
+        "displayName": "Verde otros",
+        "canonical": "oklch(0.77 0.13 170)",
+        "cssVar": "--color-stem-other",
+        "tonalRamp": [
+          "oklch(0.15 0.13 170)",
+          "oklch(0.26 0.13 170)",
+          "oklch(0.38 0.13 170)",
+          "oklch(0.49 0.13 170)",
+          "oklch(0.61 0.13 170)",
+          "oklch(0.72 0.13 170)",
+          "oklch(0.84 0.13 170)",
+          "oklch(0.95 0.13 170)"
+        ]
+      },
+      "danger": {
+        "role": "status",
+        "displayName": "Rojo de alarma",
+        "canonical": "oklch(0.7 0.18 25)",
+        "cssVar": "--color-danger",
+        "tonalRamp": [
+          "oklch(0.15 0.18 25)",
+          "oklch(0.26 0.18 25)",
+          "oklch(0.38 0.18 25)",
+          "oklch(0.49 0.18 25)",
+          "oklch(0.61 0.18 25)",
+          "oklch(0.72 0.18 25)",
+          "oklch(0.84 0.18 25)",
+          "oklch(0.95 0.18 25)"
+        ]
+      },
+      "warning": {
+        "role": "status",
+        "displayName": "Ámbar de aviso",
+        "canonical": "oklch(0.84 0.13 85)",
+        "cssVar": "--color-warning",
+        "tonalRamp": [
+          "oklch(0.15 0.13 85)",
+          "oklch(0.26 0.13 85)",
+          "oklch(0.38 0.13 85)",
+          "oklch(0.49 0.13 85)",
+          "oklch(0.61 0.13 85)",
+          "oklch(0.72 0.13 85)",
+          "oklch(0.84 0.13 85)",
+          "oklch(0.95 0.13 85)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Grafito",
+        "canonical": "oklch(0.17 0.006 260)",
+        "cssVar": "--color-surface",
+        "tonalRamp": [
+          "oklch(0.17 0.006 260)",
+          "oklch(0.205 0.007 260)",
+          "oklch(0.25 0.008 260)",
+          "oklch(0.3 0.008 260)",
+          "oklch(0.47 0.01 260)",
+          "oklch(0.67 0.01 260)",
+          "oklch(0.82 0.008 260)",
+          "oklch(0.96 0.003 260)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "oklch(0.205 0.007 260)",
+        "cssVar": "--color-panel",
+        "tonalRamp": [
+          "oklch(0.17 0.006 260)",
+          "oklch(0.205 0.007 260)",
+          "oklch(0.25 0.008 260)",
+          "oklch(0.3 0.008 260)",
+          "oklch(0.47 0.01 260)",
+          "oklch(0.67 0.01 260)",
+          "oklch(0.82 0.008 260)",
+          "oklch(0.96 0.003 260)"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Relieve",
+        "canonical": "oklch(0.25 0.008 260)",
+        "cssVar": "--color-raised",
+        "tonalRamp": [
+          "oklch(0.17 0.006 260)",
+          "oklch(0.205 0.007 260)",
+          "oklch(0.25 0.008 260)",
+          "oklch(0.3 0.008 260)",
+          "oklch(0.47 0.01 260)",
+          "oklch(0.67 0.01 260)",
+          "oklch(0.82 0.008 260)",
+          "oklch(0.96 0.003 260)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Divisor",
+        "canonical": "oklch(0.3 0.008 260)",
+        "cssVar": "--color-line",
+        "tonalRamp": [
+          "oklch(0.17 0.006 260)",
+          "oklch(0.205 0.007 260)",
+          "oklch(0.25 0.008 260)",
+          "oklch(0.3 0.008 260)",
+          "oklch(0.47 0.01 260)",
+          "oklch(0.67 0.01 260)",
+          "oklch(0.82 0.008 260)",
+          "oklch(0.96 0.003 260)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Tinta",
+        "canonical": "oklch(0.96 0.003 260)",
+        "cssVar": "--color-ink",
+        "tonalRamp": [
+          "oklch(0.17 0.006 260)",
+          "oklch(0.205 0.007 260)",
+          "oklch(0.25 0.008 260)",
+          "oklch(0.3 0.008 260)",
+          "oklch(0.47 0.01 260)",
+          "oklch(0.67 0.01 260)",
+          "oklch(0.82 0.008 260)",
+          "oklch(0.96 0.003 260)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Tinta 2",
+        "canonical": "oklch(0.82 0.008 260)",
+        "cssVar": "--color-ink-2",
+        "tonalRamp": [
+          "oklch(0.17 0.006 260)",
+          "oklch(0.205 0.007 260)",
+          "oklch(0.25 0.008 260)",
+          "oklch(0.3 0.008 260)",
+          "oklch(0.47 0.01 260)",
+          "oklch(0.67 0.01 260)",
+          "oklch(0.82 0.008 260)",
+          "oklch(0.96 0.003 260)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Tinta 3",
+        "canonical": "oklch(0.67 0.01 260)",
+        "cssVar": "--color-ink-3",
+        "tonalRamp": [
+          "oklch(0.17 0.006 260)",
+          "oklch(0.205 0.007 260)",
+          "oklch(0.25 0.008 260)",
+          "oklch(0.3 0.008 260)",
+          "oklch(0.47 0.01 260)",
+          "oklch(0.67 0.01 260)",
+          "oklch(0.82 0.008 260)",
+          "oklch(0.96 0.003 260)"
+        ]
+      },
+      "ink-4": {
+        "role": "neutral",
+        "displayName": "Tinta 4",
+        "canonical": "oklch(0.47 0.01 260)",
+        "cssVar": "--color-ink-4",
+        "tonalRamp": [
+          "oklch(0.17 0.006 260)",
+          "oklch(0.205 0.007 260)",
+          "oklch(0.25 0.008 260)",
+          "oklch(0.3 0.008 260)",
+          "oklch(0.47 0.01 260)",
+          "oklch(0.67 0.01 260)",
+          "oklch(0.82 0.008 260)",
+          "oklch(0.96 0.003 260)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Título de la extracción en la cabecera del mezclador; único h1."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Título de paneles laterales y titular del área de soltar."
+      },
+      "title-sm": {
+        "displayName": "Title small",
+        "purpose": "Logotipo, títulos de error y de estado vacío; tamaño raíz del body."
+      },
+      "item-title": {
+        "displayName": "Item title",
+        "purpose": "Título de cada fila de la biblioteca y de la separación en curso."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Tamaño de trabajo: botones, campos, textos de panel, avisos, nombres de pista."
+      },
+      "body-strong": {
+        "displayName": "Body strong",
+        "purpose": "Leyendas de grupo, títulos de sección en paneles laterales, botón primario."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Metadatos bajo el título, fechas, ayudas, contenido de paneles laterales."
+      },
+      "label-sm": {
+        "displayName": "Label small",
+        "purpose": "Cabeceras de columna (500); ayudas (400); letras M/S (700); teclas kbd."
+      },
+      "numeric": {
+        "displayName": "Numeric",
+        "purpose": "Tiempo del dock."
+      },
+      "numeric-sm": {
+        "displayName": "Numeric small",
+        "purpose": "Steppers en tamaño normal y tiempo transcurrido."
+      },
+      "numeric-xs": {
+        "displayName": "Numeric xs",
+        "purpose": "Lectura de dB, steppers pequeños (semitonos de pista, tono y tempo del dock), BPM e insignia de semitonos sobre la onda."
+      }
+    },
+    "shadows": [
+      {
+        "name": "thumb-halo",
+        "value": "0 0 0 3px var(--color-panel)",
+        "purpose": "Recorta el pulgar blanco del fader sobre su carril."
+      },
+      {
+        "name": "thumb-focus",
+        "value": "0 0 0 3px var(--color-panel), 0 0 0 5px var(--color-accent)",
+        "purpose": "Foco de teclado del fader (sustituye al contorno global)."
+      },
+      {
+        "name": "playhead-outline",
+        "value": "0 0 0 1px rgb(0 0 0 / 0.35)",
+        "purpose": "Hace legible el cabezal blanco del mezclador sobre las ondas de color."
+      },
+      {
+        "name": "indicator-ring",
+        "value": "0 0 0 2px var(--color-surface)",
+        "purpose": "Separa el punto de «hay una actualización» del icono de ajustes (ring-2 ring-surface)."
+      },
+      {
+        "name": "focus-ring",
+        "value": "outline: 2px solid var(--color-accent); outline-offset: 2px",
+        "purpose": "Contorno de foco global (:focus-visible). No es una sombra; se anota aquí por ser el otro anillo del sistema."
+      },
+      {
+        "name": "drop-overlay",
+        "value": "background: color-mix(in oklab, var(--color-surface) 85%, transparent); backdrop-filter: blur(8px); border: 2px dashed var(--color-accent)",
+        "purpose": "Única capa translúcida: solo mientras se arrastra un archivo sobre la ventana."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Transición por defecto de Tailwind para colores de hover, opacidad y filter."
+      },
+      {
+        "name": "duration-row",
+        "value": "100ms",
+        "purpose": "Hover de filas de biblioteca y botones M/S: respuesta casi inmediata."
+      },
+      {
+        "name": "duration-track",
+        "value": "150ms",
+        "purpose": "Opacidad de una pista al volverse inaudible (mute/solo)."
+      },
+      {
+        "name": "fader-thumb",
+        "value": "transform 120ms ease",
+        "purpose": "El pulgar del fader crece a scale(1.15) en hover y al arrastrar."
+      },
+      {
+        "name": "press",
+        "value": "scale(1.05) hover / scale(0.95) active",
+        "purpose": "Botón de reproducir del dock."
+      },
+      {
+        "name": "brightness",
+        "value": "filter: brightness(1.1) hover / brightness(0.95) active",
+        "purpose": "Botones rellenos de acento o peligro."
+      },
+      {
+        "name": "sheet-in",
+        "value": "220ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Entrada del panel lateral: desde translateX(24px) y opacidad 0."
+      },
+      {
+        "name": "drop-lift",
+        "value": "200ms",
+        "purpose": "El icono de la zona de soltar sube 2px en hover y crece a 1.1 con un archivo válido encima."
+      },
+      {
+        "name": "progress",
+        "value": "width 300ms ease-out",
+        "purpose": "Barras de progreso de separación y descarga (200ms en exportación)."
+      },
+      {
+        "name": "eq-level",
+        "value": "700–1100ms ease-in-out infinite alternate",
+        "purpose": "Barras del ecualizador de la fila que suena: scaleY 0.3 → 1, desfasadas; solo mientras suena."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0ms",
+        "purpose": "Con prefers-reduced-motion todas las transiciones y animaciones duran 0 y el ecualizador queda quieto."
+      },
+      {
+        "name": "attack-flash",
+        "value": "anillo +3→+10 px, opacidad 0.8→0 en 180ms",
+        "purpose": "Modo práctica: marca el instante exacto en que empieza cada nota del mástil. Desactivado en pausa y con prefers-reduced-motion."
+      },
+      {
+        "name": "hand-box-ease",
+        "value": "suavizado exponencial, constante de 45ms",
+        "purpose": "Modo práctica: la caja de la mano se desliza a su nueva posición; en pausa o al saltar se coloca de golpe."
+      },
+      {
+        "name": "reveal-late",
+        "value": "opacity 0→1 160ms ease-out, retardo 220ms",
+        "purpose": "Avisos de espera que a menudo se resuelven al instante (abrir el modo práctica con notas ya guardadas): no parpadean."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "window-min",
+        "value": "920px",
+        "note": "Ventana mínima 920×620 (tauri.conf.json)."
+      },
+      {
+        "name": "window-default",
+        "value": "1180px",
+        "note": "Ventana por defecto 1180×780."
+      },
+      {
+        "name": "dock-1000",
+        "value": "1000px",
+        "note": "Container query del dock: BPM junto al tempo."
+      },
+      {
+        "name": "dock-1100",
+        "value": "1100px",
+        "note": "Container query del dock: etiquetas «Tono», «Tempo» y «Mezclador/Biblioteca»."
+      },
+      {
+        "name": "dock-1160",
+        "value": "1160px",
+        "note": "Container query del dock: etiqueta «Exportar»."
+      },
+      {
+        "name": "dock-1240",
+        "value": "1240px",
+        "note": "Container query del dock: el fader de volumen pasa de 96 a 144px."
+      },
+      {
+        "name": "dock-1480",
+        "value": "1480px",
+        "note": "Container query del dock: nombres dentro de los chips de instrumento. Umbrales calculados para siete instrumentos."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón primario",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal de cada contexto: «Nueva extracción», «Exportar N pistas», «Instalar y reiniciar».",
+      "html": "<div class=\"ds-btn-primary-stage\"><button class=\"ds-btn-primary\" type=\"button\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Nueva extracción</button></div>",
+      "css": ".ds-btn-primary-stage { background: var(--color-surface, oklch(0.17 0.006 260)); padding: 16px; border-radius: 12px; font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: var(--color-accent, oklch(0.78 0.14 190)); color: var(--color-surface, oklch(0.17 0.006 260)); font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); font-size: 13px; font-weight: 600; cursor: pointer; transition: filter 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { filter: brightness(1.1); } .ds-btn-primary:active { filter: brightness(0.95); } .ds-btn-primary:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Botón secundario",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Recuperar, comprobar o ajustar: «Comprobar de nuevo», «Reintentar», «Cambiar carpeta…», «Mezclador».",
+      "html": "<div class=\"ds-btn-secondary-stage\"><button class=\"ds-btn-secondary\" type=\"button\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 11a8 8 0 0 0-14.6-4.5M4 4v3.5h3.5\"/><path d=\"M4 13a8 8 0 0 0 14.6 4.5M20 20v-3.5h-3.5\"/></svg>Comprobar de nuevo</button></div>",
+      "css": ".ds-btn-secondary-stage { background: var(--color-panel, oklch(0.205 0.007 260)); padding: 16px; border-radius: 12px; font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-btn-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 0; border-radius: 8px; background: var(--color-raised, oklch(0.25 0.008 260)); color: var(--color-ink, oklch(0.96 0.003 260)); font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); font-size: 13px; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-secondary:hover { background: var(--color-line, oklch(0.3 0.008 260)); } .ds-btn-secondary:disabled { opacity: 0.55; pointer-events: none; } .ds-btn-secondary:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Botón fantasma y de icono",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Acciones de cabecera y de barra sin peso visual («Restablecer», «Mostrar archivos») y botones de solo icono de 32px.",
+      "html": "<div class=\"ds-btn-ghost-stage\"><button class=\"ds-btn-ghost\" type=\"button\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 12a8 8 0 1 0 2.4-5.7L4 8.5\"/><path d=\"M4 4v4.5h4.5\"/></svg>Restablecer</button><button class=\"ds-btn-ghost\" type=\"button\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z\"/></svg>Mostrar archivos</button><button class=\"ds-btn-icon\" type=\"button\" aria-label=\"Ajustes\" title=\"Ajustes\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h10M18 7h2M4 17h2M10 17h10\"/><circle cx=\"16\" cy=\"7\" r=\"2\"/><circle cx=\"8\" cy=\"17\" r=\"2\"/></svg></button></div>",
+      "css": ".ds-btn-ghost-stage { background: var(--color-surface, oklch(0.17 0.006 260)); padding: 16px; border-radius: 12px; font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-btn-ghost-stage { display: flex; align-items: center; gap: 4px; } .ds-btn-ghost { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--color-ink-2, oklch(0.82 0.008 260)); font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); font-size: 13px; cursor: pointer; transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-ghost:hover { background: var(--color-raised, oklch(0.25 0.008 260)); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-btn-ghost:disabled { color: var(--color-ink-4, oklch(0.47 0.01 260)); pointer-events: none; } .ds-btn-icon { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--color-ink-3, oklch(0.67 0.01 260)); cursor: pointer; transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-icon:hover { background: var(--color-raised, oklch(0.25 0.008 260)); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; } .ds-btn-icon:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Búsqueda",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Buscador de la biblioteca en la barra superior, con atajo Ctrl K.",
+      "html": "<div class=\"ds-search-stage\"><label class=\"ds-search\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"6.5\"/><path d=\"m20 20-4.2-4.2\"/></svg><input type=\"search\" placeholder=\"Buscar en la biblioteca\" aria-label=\"Buscar en la biblioteca\"><kbd>Ctrl K</kbd></label></div>",
+      "css": ".ds-search-stage { background: var(--color-surface, oklch(0.17 0.006 260)); padding: 16px; border-radius: 12px; font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-search { position: relative; display: flex; align-items: center; width: 288px; } .ds-search svg { position: absolute; left: 10px; color: var(--color-ink-3, oklch(0.67 0.01 260)); pointer-events: none; } .ds-search input { width: 100%; height: 32px; padding: 0 48px 0 32px; border: 1px solid transparent; border-radius: 8px; background: var(--color-panel, oklch(0.205 0.007 260)); color: var(--color-ink, oklch(0.96 0.003 260)); font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); font-size: 13px; outline: none; transition: border-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-search input::placeholder { color: var(--color-ink-3, oklch(0.67 0.01 260)); } .ds-search input:hover { border-color: var(--color-line, oklch(0.3 0.008 260)); } .ds-search input:focus { border-color: color-mix(in oklab, var(--color-accent, oklch(0.78 0.14 190)) 60%, transparent); } .ds-search kbd { position: absolute; right: 8px; padding: 0 4px; border: 1px solid var(--color-line, oklch(0.3 0.008 260)); border-radius: 4px; font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); font-size: 11px; color: var(--color-ink-3, oklch(0.67 0.01 260)); pointer-events: none; }"
+    },
+    {
+      "name": "Barra superior",
+      "kind": "nav",
+      "refersTo": "top-bar",
+      "description": "48px fija: logotipo, estado del motor, ajustes y la acción primaria.",
+      "html": "<header class=\"ds-topbar\"><span class=\"ds-topbar-brand\">Audio<span>Extract</span></span><div class=\"ds-topbar-end\"><button class=\"ds-topbar-pill\" type=\"button\" title=\"Motor listo\"><span class=\"ds-topbar-dot\"></span>CUDA</button><button class=\"ds-topbar-icon\" type=\"button\" aria-label=\"Ajustes\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h10M18 7h2M4 17h2M10 17h10\"/><circle cx=\"16\" cy=\"7\" r=\"2\"/><circle cx=\"8\" cy=\"17\" r=\"2\"/></svg><span class=\"ds-topbar-badge\"></span></button><button class=\"ds-topbar-new\" type=\"button\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Nueva extracción</button></div></header>",
+      "css": ".ds-topbar { display: flex; align-items: center; gap: 16px; height: 48px; padding: 0 16px; background: var(--color-surface, oklch(0.17 0.006 260)); border-bottom: 1px solid var(--color-line, oklch(0.3 0.008 260)); font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); } .ds-topbar-brand { font-size: 14px; font-weight: 600; letter-spacing: -0.025em; color: var(--color-ink-2, oklch(0.82 0.008 260)); } .ds-topbar-brand span { color: var(--color-accent, oklch(0.78 0.14 190)); } .ds-topbar-end { margin-left: auto; display: flex; align-items: center; gap: 6px; } .ds-topbar-pill { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--color-ink-3, oklch(0.67 0.01 260)); font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); font-size: 12px; cursor: pointer; transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-topbar-pill:hover { background: var(--color-raised, oklch(0.25 0.008 260)); color: var(--color-ink-2, oklch(0.82 0.008 260)); } .ds-topbar-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--color-accent, oklch(0.78 0.14 190)); } .ds-topbar-icon { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--color-ink-3, oklch(0.67 0.01 260)); cursor: pointer; transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-topbar-icon:hover { background: var(--color-raised, oklch(0.25 0.008 260)); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-topbar-badge { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 999px; background: var(--color-accent, oklch(0.78 0.14 190)); box-shadow: 0 0 0 2px var(--color-surface, oklch(0.17 0.006 260)); } .ds-topbar-new { margin-left: 6px; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: var(--color-accent, oklch(0.78 0.14 190)); color: var(--color-surface, oklch(0.17 0.006 260)); font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); font-size: 13px; font-weight: 600; cursor: pointer; transition: filter 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-topbar-new:hover { filter: brightness(1.1); } .ds-topbar-pill:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; } .ds-topbar-icon:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; } .ds-topbar-new:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Dock: transporte y chips de instrumento",
+      "kind": "chip",
+      "refersTo": "stem-chip",
+      "description": "Fila de controles del dock: reproducir, detener, tiempo mono y chips con borde que silencian cada instrumento.",
+      "html": "<div class=\"ds-dock\"><button class=\"ds-dock-play\" type=\"button\" aria-label=\"Pausa\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"5.5\" y=\"4\" width=\"4.5\" height=\"16\" rx=\"1.2\"/><rect x=\"14\" y=\"4\" width=\"4.5\" height=\"16\" rx=\"1.2\"/></svg></button><button class=\"ds-dock-stop\" type=\"button\" aria-label=\"Detener\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"5\" y=\"5\" width=\"14\" height=\"14\" rx=\"2\"/></svg></button><p class=\"ds-dock-time\"><span>0:04</span> / 0:52</p><div class=\"ds-dock-chips\" role=\"group\" aria-label=\"Silenciar instrumentos\"><button class=\"ds-chip\" type=\"button\" aria-pressed=\"true\" style=\"--stem: var(--color-stem-vocals, oklch(0.74 0.17 355));\"><span class=\"ds-chip-dot\"></span><span class=\"ds-chip-label\">Voces</span></button><button class=\"ds-chip\" type=\"button\" aria-pressed=\"false\" style=\"--stem: var(--color-stem-drums, oklch(0.82 0.15 78));\"><span class=\"ds-chip-dot\"></span><span class=\"ds-chip-label\">Batería</span></button><button class=\"ds-chip\" type=\"button\" aria-pressed=\"false\" style=\"--stem: var(--color-stem-bass, oklch(0.7 0.16 290));\"><span class=\"ds-chip-dot\"></span><span class=\"ds-chip-label\">Bajo</span></button><button class=\"ds-chip\" type=\"button\" aria-pressed=\"false\" style=\"--stem: var(--color-stem-other, oklch(0.77 0.13 170));\"><span class=\"ds-chip-dot\"></span><span class=\"ds-chip-label\">Otros</span></button></div></div>",
+      "css": ".ds-dock { display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 16px; background: var(--color-panel, oklch(0.205 0.007 260)); border-top: 1px solid var(--color-line, oklch(0.3 0.008 260)); font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); } .ds-dock-play { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 0; border-radius: 999px; background: var(--color-ink, oklch(0.96 0.003 260)); color: var(--color-surface, oklch(0.17 0.006 260)); cursor: pointer; transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-dock-play:hover { transform: scale(1.05); } .ds-dock-play:active { transform: scale(0.95); } .ds-dock-stop { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: 999px; background: transparent; color: var(--color-ink-3, oklch(0.67 0.01 260)); cursor: pointer; transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-dock-stop:hover { background: var(--color-raised, oklch(0.25 0.008 260)); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-dock-time { margin: 0; font-family: var(--font-mono, \"Cascadia Mono\", \"JetBrains Mono\", \"SF Mono\", ui-monospace, monospace); font-size: 13px; font-variant-numeric: tabular-nums; color: var(--color-ink-3, oklch(0.67 0.01 260)); } .ds-dock-time span { color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-dock-chips { display: flex; gap: 4px; } .ds-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border: 1px solid var(--color-line, oklch(0.3 0.008 260)); border-radius: 6px; background: color-mix(in oklab, var(--color-raised, oklch(0.25 0.008 260)) 70%, transparent); cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-chip:hover { background: var(--color-raised, oklch(0.25 0.008 260)); } .ds-chip-dot { width: 10px; height: 10px; box-sizing: border-box; border-radius: 999px; border: 2px solid var(--stem); background: var(--stem); } .ds-chip-label { font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); font-size: 12px; color: var(--color-ink-2, oklch(0.82 0.008 260)); } .ds-chip[aria-pressed=\"true\"] { background: transparent; border-color: color-mix(in oklab, var(--color-line, oklch(0.3 0.008 260)) 70%, transparent); } .ds-chip[aria-pressed=\"true\"]:hover { background: color-mix(in oklab, var(--color-raised, oklch(0.25 0.008 260)) 60%, transparent); } .ds-chip[aria-pressed=\"true\"] .ds-chip-dot { background: transparent; opacity: 0.55; } .ds-chip[aria-pressed=\"true\"] .ds-chip-label { color: var(--color-ink-4, oklch(0.47 0.01 260)); text-decoration: line-through; } .ds-dock-play:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; } .ds-dock-stop:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; } .ds-chip:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Tono y tempo del dock",
+      "kind": "control",
+      "refersTo": "tone-tempo-stack",
+      "description": "Dos filas apiladas en la fila de 56 px del dock: tono arriba y tempo abajo, cada una con su icono, su etiqueta (desde 1100 px) y un stepper pequeño del mismo ancho. A la derecha del tempo, los BPM que suenan en lectura neutra; el acento solo marca el valor alterado.",
+      "html": "<div class=\"ds-tt\" role=\"group\" aria-label=\"Tono y tempo de toda la canción\"><div class=\"ds-tt-row\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 18V6l10-2v12\"/><circle cx=\"6.5\" cy=\"18\" r=\"2.5\"/><circle cx=\"16.5\" cy=\"16\" r=\"2.5\"/></svg><span class=\"ds-tt-label\">Tono</span><div class=\"ds-semi\"><button type=\"button\" aria-label=\"Bajar un semitono (toda la canción)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/></svg></button><span role=\"spinbutton\" tabindex=\"0\" aria-label=\"Semitonos de toda la canción\" aria-valuemin=\"-12\" aria-valuemax=\"12\" aria-valuenow=\"0\">0</span><button type=\"button\" aria-label=\"Subir un semitono (toda la canción)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg></button></div></div><div class=\"ds-tt-row\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9.3 3.5h5.4L19 20.5H5Z\"/><path d=\"M6.6 15h10.8\"/><path d=\"m12 15 6-9.5\"/></svg><span class=\"ds-tt-label\">Tempo</span><div class=\"ds-semi\"><button type=\"button\" aria-label=\"Más lento (−5 %)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/></svg></button><span role=\"spinbutton\" tabindex=\"0\" aria-label=\"Tempo de toda la canción\" aria-valuemin=\"50\" aria-valuemax=\"150\" aria-valuenow=\"80\" data-shifted=\"true\">80 %</span><button type=\"button\" aria-label=\"Más rápido (+5 %)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg></button></div><span class=\"ds-tt-bpm\"><b>74</b> BPM</span></div></div>",
+      "css": ".ds-tt { display: inline-flex; flex-direction: column; gap: 2px; padding: 3px 16px; background: var(--color-panel, oklch(0.205 0.007 260)); color: var(--color-ink-3, oklch(0.67 0.01 260)); font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); } .ds-tt-row { display: flex; align-items: center; gap: 6px; } .ds-tt-label { width: 40px; font-size: 12px; } .ds-tt .ds-semi span { min-width: 5.5ch; white-space: nowrap; } .ds-tt-bpm { padding-left: 4px; font-size: 11px; white-space: nowrap; } .ds-tt-bpm b { font-family: var(--font-mono, \"Cascadia Mono\", \"JetBrains Mono\", \"SF Mono\", ui-monospace, monospace); font-weight: 400; font-variant-numeric: tabular-nums; color: var(--color-ink-2, oklch(0.82 0.008 260)); } .ds-semi { display: flex; align-items: center; border-radius: 8px; background: color-mix(in oklab, var(--color-surface, oklch(0.17 0.006 260)) 70%, transparent); } .ds-semi button { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: 0; border-radius: 6px; background: transparent; color: var(--color-ink-3, oklch(0.67 0.01 260)); cursor: pointer; transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-semi button:hover { background: var(--color-raised, oklch(0.25 0.008 260)); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-semi span { min-width: 28px; text-align: center; font-family: var(--font-mono, \"Cascadia Mono\", \"JetBrains Mono\", \"SF Mono\", ui-monospace, monospace); font-size: 11px; font-variant-numeric: tabular-nums; color: var(--color-ink-2, oklch(0.82 0.008 260)); border-radius: 6px; } .ds-semi span[data-shifted=\"true\"] { color: var(--color-accent, oklch(0.78 0.14 190)); font-weight: 600; }"
+    },
+    {
+      "name": "Tarjeta de opción de instrumento",
+      "kind": "card",
+      "refersTo": "option-card",
+      "description": "Elección de instrumentos opcionales en «Nueva extracción»: la elegida toma el color de su instrumento al 10 %.",
+      "html": "<div class=\"ds-option-stage\"><button class=\"ds-option\" type=\"button\" aria-pressed=\"true\" style=\"--stem: var(--color-stem-guitar, oklch(0.74 0.15 42));\"><span class=\"ds-option-head\"><span class=\"ds-option-dot\"></span><span class=\"ds-option-name\">Guitarra</span></span><span class=\"ds-option-hint\">Eléctrica y acústica</span></button><button class=\"ds-option\" type=\"button\" aria-pressed=\"false\" style=\"--stem: var(--color-stem-piano, oklch(0.76 0.12 240));\"><span class=\"ds-option-head\"><span class=\"ds-option-dot\"></span><span class=\"ds-option-name\">Piano</span></span><span class=\"ds-option-hint\">Piano y teclados</span></button></div>",
+      "css": ".ds-option-stage { background: var(--color-panel, oklch(0.205 0.007 260)); padding: 16px; border-radius: 12px; font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-option-stage { display: grid; grid-template-columns: repeat(2, minmax(0, 180px)); gap: 8px; } .ds-option { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 12px; border: 1px solid var(--color-line, oklch(0.3 0.008 260)); border-radius: 12px; background: transparent; text-align: left; font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-option:hover { border-color: var(--color-ink-4, oklch(0.47 0.01 260)); background: color-mix(in oklab, var(--color-raised, oklch(0.25 0.008 260)) 50%, transparent); } .ds-option[aria-pressed=\"true\"] { border-color: color-mix(in oklab, var(--stem) 60%, transparent); background: color-mix(in oklab, var(--stem) 10%, transparent); } .ds-option-head { display: flex; align-items: center; gap: 8px; } .ds-option-dot { width: 10px; height: 10px; box-sizing: border-box; border-radius: 999px; border: 2px solid var(--stem); } .ds-option[aria-pressed=\"true\"] .ds-option-dot { background: var(--stem); } .ds-option-name { font-size: 13px; font-weight: 500; color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-option-hint { font-size: 11px; line-height: 1.375; color: var(--color-ink-3, oklch(0.67 0.01 260)); } .ds-option:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Segmentado",
+      "kind": "custom",
+      "refersTo": "segmented",
+      "description": "Elección excluyente dentro de un panel lateral (qué exportar, formato).",
+      "html": "<div class=\"ds-seg-stage\"><div class=\"ds-seg\" role=\"radiogroup\" aria-label=\"Formato\"><button type=\"button\" role=\"radio\" aria-checked=\"true\">WAV 24 bits</button><button type=\"button\" role=\"radio\" aria-checked=\"false\">WAV 16 bits</button><button type=\"button\" role=\"radio\" aria-checked=\"false\">MP3 320 kbps</button></div></div>",
+      "css": ".ds-seg-stage { background: var(--color-panel, oklch(0.205 0.007 260)); padding: 16px; border-radius: 12px; font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: 360px; padding: 4px; border-radius: 12px; background: var(--color-surface, oklch(0.17 0.006 260)); } .ds-seg button { height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--color-ink-3, oklch(0.67 0.01 260)); font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); font-size: 13px; cursor: pointer; transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-seg button:hover { color: var(--color-ink-2, oklch(0.82 0.008 260)); } .ds-seg button[aria-checked=\"true\"] { background: var(--color-raised, oklch(0.25 0.008 260)); color: var(--color-ink, oklch(0.96 0.003 260)); font-weight: 500; } .ds-seg button:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Fila de biblioteca",
+      "kind": "custom",
+      "refersTo": "library-row",
+      "description": "Firma de la biblioteca: fila de 56px con ecualizador si suena, franja fija de siete instrumentos y acciones que aparecen al pasar el ratón.",
+      "html": "<ul class=\"ds-lib\"><li class=\"ds-lib-row\" data-current=\"true\"><span class=\"ds-lib-eq\" aria-hidden=\"true\"><i style=\"height:60%\"></i><i style=\"height:100%\"></i><i style=\"height:80%\"></i><i style=\"height:45%\"></i></span><div class=\"ds-lib-main\"><button class=\"ds-lib-title\" type=\"button\">Luces de neón</button><p class=\"ds-lib-meta\">Máxima · CUDA · Luces de neón.mp3</p></div><span class=\"ds-lib-stems\" role=\"img\" aria-label=\"Instrumentos: Voces, Batería, Bajo, Piano, Otros\"><i style=\"--stem: var(--color-stem-vocals, oklch(0.74 0.17 355));\"></i><i style=\"--stem: var(--color-stem-drums, oklch(0.82 0.15 78));\"></i><i style=\"--stem: var(--color-stem-bass, oklch(0.7 0.16 290));\"></i><i class=\"off\"></i><i style=\"--stem: var(--color-stem-piano, oklch(0.76 0.12 240));\"></i><i class=\"off\"></i><i style=\"--stem: var(--color-stem-other, oklch(0.77 0.13 170));\"></i></span><span class=\"ds-lib-dur\">0:52</span><span class=\"ds-lib-date\">hoy, 09:40</span><div class=\"ds-lib-actions\"><button type=\"button\" aria-label=\"Exportar\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5\"/><path d=\"M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4\"/></svg></button><button type=\"button\" aria-label=\"Mostrar en la carpeta\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z\"/></svg></button><button type=\"button\" aria-label=\"Renombrar\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 20h4L19 9a2.83 2.83 0 0 0-4-4L4 16Z\"/><path d=\"m13.5 6.5 4 4\"/></svg></button><button type=\"button\" class=\"danger\" aria-label=\"Eliminar\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h16M10 11v6M14 11v6\"/><path d=\"M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3\"/></svg></button></div></li><li class=\"ds-lib-row\"><span></span><div class=\"ds-lib-main\"><button class=\"ds-lib-title\" type=\"button\">Ritmo de la calle</button><p class=\"ds-lib-meta\">Rápida · CUDA · Ritmo de la calle.mp3</p></div><span class=\"ds-lib-stems\" role=\"img\" aria-label=\"Instrumentos: Voces, Batería, Bajo, Otros\"><i style=\"--stem: var(--color-stem-vocals, oklch(0.74 0.17 355));\"></i><i style=\"--stem: var(--color-stem-drums, oklch(0.82 0.15 78));\"></i><i style=\"--stem: var(--color-stem-bass, oklch(0.7 0.16 290));\"></i><i class=\"off\"></i><i class=\"off\"></i><i class=\"off\"></i><i style=\"--stem: var(--color-stem-other, oklch(0.77 0.13 170));\"></i></span><span class=\"ds-lib-dur\">0:44</span><span class=\"ds-lib-date\">ayer, 08:04</span><div class=\"ds-lib-actions\"><button type=\"button\" aria-label=\"Exportar\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5\"/><path d=\"M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4\"/></svg></button><button type=\"button\" aria-label=\"Mostrar en la carpeta\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z\"/></svg></button><button type=\"button\" aria-label=\"Renombrar\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 20h4L19 9a2.83 2.83 0 0 0-4-4L4 16Z\"/><path d=\"m13.5 6.5 4 4\"/></svg></button><button type=\"button\" class=\"danger\" aria-label=\"Eliminar\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h16M10 11v6M14 11v6\"/><path d=\"M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3\"/></svg></button></div></li></ul>",
+      "css": ".ds-lib { list-style: none; margin: 0; padding: 0; width: 720px; background: var(--color-panel, oklch(0.205 0.007 260)); border: 1px solid var(--color-line, oklch(0.3 0.008 260)); border-radius: 16px; overflow: hidden; font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); } .ds-lib-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) 112px 60px 108px 132px; column-gap: 12px; align-items: center; height: 56px; padding: 0 8px; transition: background-color 100ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-lib-row + .ds-lib-row { border-top: 1px solid color-mix(in oklab, var(--color-line, oklch(0.3 0.008 260)) 70%, transparent); } .ds-lib-row:hover { background: color-mix(in oklab, var(--color-raised, oklch(0.25 0.008 260)) 35%, transparent); } .ds-lib-row[data-current=\"true\"] { background: color-mix(in oklab, var(--color-raised, oklch(0.25 0.008 260)) 70%, transparent); } .ds-lib-eq { display: flex; align-items: flex-end; justify-self: center; gap: 2px; height: 14px; } .ds-lib-eq i { width: 3px; border-radius: 999px; background: var(--color-accent, oklch(0.78 0.14 190)); transform-origin: bottom; animation: ds-eq 900ms ease-in-out infinite alternate; } .ds-lib-eq i:nth-child(2) { animation-duration: 700ms; animation-delay: -300ms; } .ds-lib-eq i:nth-child(3) { animation-duration: 1100ms; animation-delay: -600ms; } .ds-lib-eq i:nth-child(4) { animation-duration: 800ms; animation-delay: -150ms; } @keyframes ds-eq { from { transform: scaleY(0.3); } to { transform: scaleY(1); } } @media (prefers-reduced-motion: reduce) { .ds-lib-eq i { animation: none; } } .ds-lib-main { min-width: 0; } .ds-lib-title { display: block; max-width: 100%; padding: 0; border: 0; background: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); font-size: 13.5px; font-weight: 500; color: var(--color-ink, oklch(0.96 0.003 260)); cursor: pointer; border-radius: 4px; } .ds-lib-meta { margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--color-ink-3, oklch(0.67 0.01 260)); } .ds-lib-stems { display: flex; align-items: center; gap: 6px; } .ds-lib-stems i { width: 10px; height: 10px; box-sizing: border-box; border-radius: 999px; background: var(--stem); } .ds-lib-stems i.off { background: transparent; border: 1px solid color-mix(in oklab, var(--color-ink-4, oklch(0.47 0.01 260)) 60%, transparent); } .ds-lib-dur { text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--color-ink-2, oklch(0.82 0.008 260)); } .ds-lib-date { padding-left: 20px; font-size: 12px; color: var(--color-ink-3, oklch(0.67 0.01 260)); white-space: nowrap; } .ds-lib-actions { display: flex; justify-content: flex-end; gap: 2px; opacity: 0; transition: opacity 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-lib-row:hover .ds-lib-actions, .ds-lib-row:focus-within .ds-lib-actions { opacity: 1; } .ds-lib-actions button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--color-ink-3, oklch(0.67 0.01 260)); cursor: pointer; transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-lib-actions button:hover { background: var(--color-line, oklch(0.3 0.008 260)); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-lib-actions button.danger:hover { color: var(--color-danger, oklch(0.7 0.18 25)); } .ds-lib-title:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; } .ds-lib-actions button:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Pista del mezclador con fader",
+      "kind": "custom",
+      "refersTo": "toggle-track",
+      "description": "Firma del mezclador: punto y nombre, semitonos, M/S; debajo el fader redondeado teñido del instrumento con su marca de 0 dB, el vúmetro de 3px justo bajo el carril y la lectura en dB al final de la fila.",
+      "html": "<div class=\"ds-track\" style=\"--stem: var(--color-stem-piano, oklch(0.76 0.12 240));\"><div class=\"ds-track-head\"><span class=\"ds-track-dot\"></span><span class=\"ds-track-name\">Piano</span><div class=\"ds-semi\" title=\"Tono de Piano: +2 semitonos\"><button type=\"button\" aria-label=\"Bajar un semitono (Piano)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14\"/></svg></button><span role=\"spinbutton\" tabindex=\"0\" aria-label=\"Semitonos de Piano\" aria-valuemin=\"-12\" aria-valuemax=\"12\" aria-valuenow=\"2\" data-shifted=\"true\">+2</span><button type=\"button\" aria-label=\"Subir un semitono (Piano)\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg></button></div><button class=\"ds-ms\" type=\"button\" aria-pressed=\"false\" data-kind=\"mute\" aria-label=\"Silenciar Piano\">M</button><button class=\"ds-ms\" type=\"button\" aria-pressed=\"false\" data-kind=\"solo\" aria-label=\"Solo Piano\">S</button></div><div class=\"ds-track-row\"><div class=\"ds-fader-wrap\"><span class=\"ds-fader-unity\"></span><input class=\"ds-fader\" type=\"range\" min=\"0\" max=\"1\" step=\"0.005\" value=\"0.75\" style=\"--fill: 75%\" aria-label=\"Volumen de Piano\" aria-valuetext=\"0.0 dB\"><div class=\"ds-meter\"><div class=\"ds-meter-level\"></div><div class=\"ds-meter-peak\"></div></div></div><span class=\"ds-track-db\">0.0 dB</span></div></div>",
+      "css": ".ds-track { display: flex; flex-direction: column; justify-content: center; gap: 4px; width: 312px; box-sizing: border-box; padding: 10px 16px; background: var(--color-panel, oklch(0.205 0.007 260)); font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); } .ds-track-head { display: flex; align-items: center; gap: 8px; } .ds-track-dot { width: 10px; height: 10px; flex-shrink: 0; border-radius: 999px; background: var(--stem); } .ds-track-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-semi { display: flex; align-items: center; border-radius: 8px; background: color-mix(in oklab, var(--color-surface, oklch(0.17 0.006 260)) 70%, transparent); } .ds-semi button { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: 0; border-radius: 6px; background: transparent; color: var(--color-ink-3, oklch(0.67 0.01 260)); cursor: pointer; transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-semi button:hover { background: var(--color-raised, oklch(0.25 0.008 260)); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-semi span { min-width: 28px; text-align: center; font-family: var(--font-mono, \"Cascadia Mono\", \"JetBrains Mono\", \"SF Mono\", ui-monospace, monospace); font-size: 11px; font-variant-numeric: tabular-nums; color: var(--color-ink-2, oklch(0.82 0.008 260)); border-radius: 6px; } .ds-semi span[data-shifted=\"true\"] { color: var(--color-accent, oklch(0.78 0.14 190)); font-weight: 600; } .ds-ms { width: 24px; height: 24px; flex-shrink: 0; border: 0; border-radius: 6px; background: var(--color-raised, oklch(0.25 0.008 260)); color: var(--color-ink-3, oklch(0.67 0.01 260)); font-family: var(--font-sans, \"Segoe UI Variable Text\", \"Segoe UI Variable\", \"Segoe UI\", \"Inter\", system-ui, -apple-system, sans-serif); font-size: 11px; font-weight: 700; cursor: pointer; transition: color 100ms, background-color 100ms; } .ds-ms:hover { background: var(--color-line, oklch(0.3 0.008 260)); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-ms[data-kind=\"mute\"][aria-pressed=\"true\"] { background: var(--color-danger, oklch(0.7 0.18 25)); color: var(--color-surface, oklch(0.17 0.006 260)); } .ds-ms[data-kind=\"solo\"][aria-pressed=\"true\"] { background: var(--color-warning, oklch(0.84 0.13 85)); color: var(--color-surface, oklch(0.17 0.006 260)); } .ds-track-row { display: flex; align-items: center; gap: 10px; } .ds-fader-wrap { position: relative; display: flex; align-items: center; flex: 1; min-width: 0; height: 14px; } .ds-fader-unity { position: absolute; top: 50%; left: calc(75% - 3.5px); width: 1px; height: 10px; transform: translateY(-50%); background: var(--color-ink-4, oklch(0.47 0.01 260)); pointer-events: none; } .ds-fader { --track-h: 4px; --thumb: 14px; position: relative; appearance: none; -webkit-appearance: none; width: 100%; height: var(--thumb); margin: 0; background: transparent; cursor: pointer; } .ds-fader::-webkit-slider-runnable-track { height: var(--track-h); border-radius: 999px; background: linear-gradient(to right, var(--stem, var(--color-accent, oklch(0.78 0.14 190))) var(--fill, 0%), var(--color-line, oklch(0.3 0.008 260)) var(--fill, 0%)); } .ds-fader::-moz-range-track { height: var(--track-h); border-radius: 999px; background: var(--color-line, oklch(0.3 0.008 260)); } .ds-fader::-moz-range-progress { height: var(--track-h); border-radius: 999px; background: var(--stem, var(--color-accent, oklch(0.78 0.14 190))); } .ds-fader::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: var(--thumb); height: var(--thumb); margin-top: calc((var(--track-h) - var(--thumb)) / 2); border-radius: 999px; background: var(--color-ink, oklch(0.96 0.003 260)); box-shadow: 0 0 0 3px var(--color-panel, oklch(0.205 0.007 260)); transition: transform 120ms ease; } .ds-fader::-moz-range-thumb { width: var(--thumb); height: var(--thumb); border: 0; border-radius: 999px; background: var(--color-ink, oklch(0.96 0.003 260)); box-shadow: 0 0 0 3px var(--color-panel, oklch(0.205 0.007 260)); } .ds-fader:hover::-webkit-slider-thumb, .ds-fader:active::-webkit-slider-thumb { transform: scale(1.15); } .ds-fader:focus-visible { outline: none; } .ds-fader:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--color-panel, oklch(0.205 0.007 260)), 0 0 0 5px var(--color-accent, oklch(0.78 0.14 190)); } .ds-meter { position: absolute; left: 0; right: 0; bottom: -4px; height: 3px; overflow: hidden; border-radius: 999px; background: var(--color-surface, oklch(0.17 0.006 260)); pointer-events: none; } .ds-meter-level { height: 100%; border-radius: 999px; background: var(--stem); transform-origin: left; transform: scaleX(0.55); } .ds-meter-peak { position: absolute; top: 0; left: calc(62% - 1px); width: 2px; height: 100%; background: var(--color-ink-2, oklch(0.82 0.008 260)); } .ds-track-db { width: 56px; flex-shrink: 0; text-align: right; font-family: var(--font-mono, \"Cascadia Mono\", \"JetBrains Mono\", \"SF Mono\", ui-monospace, monospace); font-size: 11px; font-variant-numeric: tabular-nums; color: var(--color-ink-3, oklch(0.67 0.01 260)); } .ds-semi button:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; } .ds-semi span:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; } .ds-ms:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Acción de pista «Practicar»",
+      "kind": "button",
+      "refersTo": "button-track-action",
+      "description": "Acción propia de una pista, entre el nombre y los semitonos: misma familia que M/S (24px, 6px de radio, raised) pero con texto, porque es una acción y no un conmutador. Solo la lleva el bajo.",
+      "html": "<div class=\"ds-track-head\" style=\"--stem: var(--color-stem-bass, oklch(0.7 0.16 290));\"><span class=\"ds-dot\"></span><span class=\"ds-name\">Bajo</span><button type=\"button\" class=\"ds-track-action\" title=\"Modo práctica: mástil y tablatura del bajo, sincronizados con la canción\">Practicar</button><button type=\"button\" class=\"ds-ms\" aria-pressed=\"false\" aria-label=\"Silenciar Bajo\">M</button><button type=\"button\" class=\"ds-ms\" aria-pressed=\"false\" aria-label=\"Solo Bajo\">S</button></div>",
+      "css": ".ds-track-head { display: flex; align-items: center; gap: 8px; width: 280px; padding: 8px 16px; background: var(--color-panel, oklch(0.205 0.007 260)); font-family: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif; } .ds-dot { width: 10px; height: 10px; border-radius: 999px; background: var(--stem); flex-shrink: 0; } .ds-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-track-action { height: 24px; padding: 0 8px; border: 0; border-radius: 6px; background: var(--color-raised, oklch(0.25 0.008 260)); color: var(--color-ink-2, oklch(0.82 0.008 260)); font: 600 11px/1 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif; cursor: pointer; transition: background-color 100ms, color 100ms; } .ds-track-action:hover { background: var(--color-line, oklch(0.3 0.008 260)); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-track-action:focus-visible, .ds-ms:focus-visible { outline: 2px solid var(--color-accent, oklch(0.78 0.14 190)); outline-offset: 2px; } .ds-ms { width: 24px; height: 24px; border: 0; border-radius: 6px; background: var(--color-raised, oklch(0.25 0.008 260)); color: var(--color-ink-3, oklch(0.67 0.01 260)); font: 700 11px/1 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, sans-serif; cursor: pointer; transition: background-color 100ms, color 100ms; } .ds-ms:hover { background: var(--color-line, oklch(0.3 0.008 260)); color: var(--color-ink, oklch(0.96 0.003 260)); }"
+    },
+    {
+      "name": "Mástil y tablatura del modo práctica",
+      "kind": "custom",
+      "refersTo": "fretboard",
+      "description": "Muestra estática de lo que la app dibuja en canvas: diapasón surface con la caja de la mano (stem-bass al 10 %), la nota que suena como punto stem-bass con su nombre, la siguiente como anillo, y debajo la tablatura con la línea «ahora» y la píldora del número que suena.",
+      "html": "<div class=\"ds-practice\" style=\"--stem: var(--color-stem-bass, oklch(0.7 0.16 290));\" role=\"img\" aria-label=\"Mástil de bajo de 4 cuerdas con la nota que suena y tablatura\"><div class=\"ds-neck\"><span class=\"ds-box\"></span><span class=\"ds-string\" style=\"top:12.5%\"></span><span class=\"ds-string\" style=\"top:37.5%\"></span><span class=\"ds-string ds-string-on\" style=\"top:62.5%;left:42%\"></span><span class=\"ds-string\" style=\"top:87.5%;height:2.4px\"></span><span class=\"ds-fret\" style=\"left:24%\"></span><span class=\"ds-fret\" style=\"left:42%\"></span><span class=\"ds-fret\" style=\"left:58%\"></span><span class=\"ds-fret\" style=\"left:72%\"></span><span class=\"ds-note\" style=\"top:62.5%;left:33%\">C#</span><span class=\"ds-next\" style=\"top:87.5%;left:50%\"></span></div><div class=\"ds-tab\"><span class=\"ds-tline\" style=\"top:20%\"></span><span class=\"ds-tline\" style=\"top:40%\"></span><span class=\"ds-tline\" style=\"top:60%\"></span><span class=\"ds-tline\" style=\"top:80%\"></span><span class=\"ds-now\"></span><span class=\"ds-dur\" style=\"top:60%;left:calc(16% + 14px);width:56px\"></span><span class=\"ds-fret-now\" style=\"top:60%\">4</span><span class=\"ds-dur ds-dur-next\" style=\"top:80%;left:calc(52% + 10px);width:48px\"></span><span class=\"ds-fret-next\" style=\"top:80%;left:52%\">5</span></div></div>",
+      "css": ".ds-practice { width: 420px; padding: 16px 20px; background: var(--color-panel, oklch(0.205 0.007 260)); border: 1px solid var(--color-line, oklch(0.3 0.008 260)); border-radius: 16px; font-family: 'Cascadia Mono', 'JetBrains Mono', ui-monospace, monospace; } .ds-neck { position: relative; height: 120px; background: var(--color-surface, oklch(0.17 0.006 260)); border-left: 4px solid var(--color-ink-4, oklch(0.47 0.01 260)); border-radius: 8px; } .ds-box { position: absolute; top: 2px; bottom: 2px; left: 2px; width: 70%; background: color-mix(in oklab, var(--stem) 10%, transparent); border: 1px solid color-mix(in oklab, var(--stem) 40%, transparent); border-radius: 6px; } .ds-string { position: absolute; left: 0; right: 0; height: 1.4px; background: var(--color-ink-4, oklch(0.47 0.01 260)); transform: translateY(-50%); } .ds-string-on { height: 2px; background: var(--stem); } .ds-fret { position: absolute; top: 3px; bottom: 3px; width: 2px; background: var(--color-line, oklch(0.3 0.008 260)); } .ds-note { position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 999px; background: var(--stem); color: var(--color-surface, oklch(0.17 0.006 260)); font-size: 11px; font-weight: 600; display: grid; place-items: center; } .ds-next { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 999px; border: 2px solid color-mix(in oklab, var(--stem) 60%, transparent); } .ds-tab { position: relative; height: 96px; margin-top: 16px; border-top: 1px solid var(--color-line, oklch(0.3 0.008 260)); } .ds-tline { position: absolute; left: 0; right: 0; height: 1px; background: var(--color-line, oklch(0.3 0.008 260)); } .ds-now { position: absolute; top: 8%; bottom: 8%; left: 16%; width: 1px; background: var(--color-ink, oklch(0.96 0.003 260)); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.35); } .ds-fret-now, .ds-fret-next { position: absolute; transform: translate(-50%, -50%); font-size: 12px; font-weight: 600; } .ds-fret-now { left: 16%; height: 18px; min-width: 18px; padding: 0 4px; border-radius: 6px; background: var(--stem); color: var(--color-surface, oklch(0.17 0.006 260)); display: grid; place-items: center; } .ds-fret-next { padding: 0 4px; background: var(--color-panel, oklch(0.205 0.007 260)); color: var(--color-ink, oklch(0.96 0.003 260)); } .ds-dur { position: absolute; height: 3px; margin-top: -1.5px; border-radius: 999px; background: color-mix(in oklab, var(--stem) 85%, transparent); } .ds-dur-next { background: color-mix(in oklab, var(--stem) 45%, transparent); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "El rack de la sesión",
+    "overview": "AudioExtract es una herramienta de escritorio para sesiones de escucha concentrada: se vuelve a una extracción, se escucha, se mezcla, se transpone y se exporta. La interfaz se comporta como un rack de estudio. Tiene superficies casi negras y frías, todas del mismo tono, apiladas en tres escalones de luminosidad, con divisores de 1 px y filas densas de 56 px. El transporte es un dock fijo abajo que no cambia de sitio en ninguna vista. La biblioteca es una tabla y el mezclador es una tabla de pistas alineada con sus ondas; en el modo práctica, las ondas dejan sitio a un mástil de bajo y una tablatura dibujados en canvas con los mismos tokens. No hay pantalla de bienvenida ni rejilla de tarjetas.\n\nEl color está racionado. La interfaz es neutra, y un único turquesa marca la acción primaria, el foco, el progreso y lo que está sonando o alterado: el cabezal del dock, el ecualizador de la fila que suena, un tono transpuesto, un tempo cambiado. El resto del color pertenece al contenido. Son siete matices fijos, uno por instrumento, que se repiten idénticos en la franja de la biblioteca, los chips del dock, las pistas del mezclador, las casillas de exportación y el icono de la app. Un instrumento se reconoce por su color en cualquier pantalla.\n\nEl control firma es el fader horizontal redondeado: un carril fino teñido con el color de la pista hasta el valor, un pulgar blanco con halo del color del panel y una marca de 0 dB. Las cifras que cambian (tiempo, dB, semitonos, tempo) van en mono tabular para que no bailen. La densidad es alta pero legible: se trabaja a 13 px, los metadatos van a 12 px y nada baja de 11 px.",
+    "keyCharacteristics": [
+      "Oscuro y frío: tres superficies del mismo tono (`surface` → `panel` → `raised`) más el divisor `line`, sin sombras de elevación.",
+      "Un solo acento, turquesa, para acción, foco, progreso y «suena o está alterado».",
+      "Siete colores de instrumento fijos, que son el único croma del contenido.",
+      "Listas como filas densas con columnas fijas; paneles grandes con 16 px de radio y borde de 1 px.",
+      "El fader horizontal redondeado como control firma; cifras en mono tabular.",
+      "Lo que se dibuja en canvas (ondas, mástil, tablatura) lee los mismos tokens que el resto: no hay una paleta aparte.",
+      "Acciones de fila ocultas hasta el hover, pero siempre alcanzables con el teclado.",
+      "Movimiento corto y funcional, anulado por completo con `prefers-reduced-motion`."
+    ],
+    "rules": [
+      {
+        "name": "Regla de la señal única",
+        "body": "El turquesa significa «acción, foco, progreso o algo que suena o está alterado». No se usa como decoración, ni en fondos grandes, ni para clasificar. Si algo es turquesa, se puede pulsar o está vivo.",
+        "section": "colors"
+      },
+      {
+        "name": "Regla de la identidad del instrumento",
+        "body": "Cada instrumento tiene un único color (`stem-*`) y ese color no se usa para nada más. Todo lo nuevo que represente una pista toma su color de `stemStyle(id)`.",
+        "section": "colors"
+      },
+      {
+        "name": "Regla del estado con palabra",
+        "body": "El rojo y el ámbar de estado caen cerca de guitarra y batería en el círculo cromático. Por eso un estado siempre lleva letra, texto o icono (M/S, «Faltan en el disco», «CPU», icono de alerta) y nunca es solo un punto de color.",
+        "section": "colors"
+      },
+      {
+        "name": "Regla de las cifras tabulares",
+        "body": "Toda cifra que cambia mientras se mira (tiempo, dB, semitonos, tempo, BPM, porcentaje, duración) usa `tabular-nums`. Si además es una lectura de instrumento (tiempo del dock, dB, semitonos, tempo, BPM) va en `font-mono`. Las duraciones y porcentajes de la tabla van en sans tabular.",
+        "section": "typography"
+      },
+      {
+        "name": "Regla del menos tipográfico",
+        "body": "Los valores negativos usan el signo menos (−), no el guion: «−2», «−3.5 dB», «−∞» (`formatSemitones` y `formatDb` en `src/lib/format.ts`).",
+        "section": "typography"
+      },
+      {
+        "name": "Regla del suelo de 11 px",
+        "body": "Ningún texto baja de 11 px. La jerarquía se hace con peso y tinta (`ink` → `ink-2` → `ink-3`), no encogiendo la letra.",
+        "section": "typography"
+      },
+      {
+        "name": "Regla del dock fijo",
+        "body": "El transporte vive en el dock en todas las vistas: la vista cambia por encima y el dock no. Ninguna vista duplica los controles de reproducción, tampoco el modo práctica (en él solo se salta con un clic en la tablatura, igual que con un clic en las ondas).",
+        "section": "layout"
+      },
+      {
+        "name": "Regla de las mismas columnas",
+        "body": "Todo lo que entra en la tabla de la biblioteca usa `ROW_GRID`. Una fila nueva no inventa columnas.",
+        "section": "layout"
+      },
+      {
+        "name": "Regla del difuminado cero",
+        "body": "En AudioExtract una sombra tiene difuminado 0: es un anillo, nunca una nube. La elevación se expresa subiendo un escalón tonal.",
+        "section": "elevation"
+      },
+      {
+        "name": "Regla del radio anidado",
+        "body": "Lo que va dentro tiene menos radio que lo que lo contiene: panel 16 → tarjeta o segmentado 12 → botón 8 → chip 6.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** usar los tokens de `src/index.css` mediante utilidades de Tailwind (`bg-panel`, `text-ink-3`, `border-line`, `bg-accent/10`); un color nuevo se añade primero al `@theme`.",
+      "**Do** pintar todo lo que represente una pista con su `--stem` mediante `stemStyle(id)` y respetar el orden de `STEM_ORDER`.",
+      "**Do** reservar el acento para la acción primaria, el foco, el progreso y lo que suena o está alterado, con el texto sobre el acento en `surface`.",
+      "**Do** expresar jerarquía y profundidad con el siguiente escalón tonal (`surface` → `panel` → `raised` → `line`) y bordes de 1 px.",
+      "**Do** escribir el texto en `ink`, `ink-2` o `ink-3`, y dejar `ink-4` solo para lo decorativo o deshabilitado.",
+      "**Do** usar mono tabular para tiempos, dB, semitonos, tempo y BPM, con el signo − tipográfico.",
+      "**Do** reutilizar `Fader`, `Stepper` (con `SemitoneControl` y `TempoControl`), `Sheet`/`SheetSection`, `ROW_GRID` y `stemStyle` antes que crear variantes.",
+      "**Do** dar `aria-label` y `title` a cada botón de solo icono, y hacer que las acciones ocultas aparezcan también con `focus-within`.",
+      "**Do** mantener las transiciones de estado cortas (100–220 ms) y comprobar que `prefers-reduced-motion` las anula.",
+      "**Do** dibujar en canvas con los tokens leídos de las variables CSS (`getComputedStyle`), a la resolución del dispositivo, cacheando lo estático y sin bucle de animación cuando nada se mueve."
+    ],
+    "donts": [
+      "**Don't** usar sombras de elevación ni sombras difuminadas en paneles, paneles laterales o avisos: un `box-shadow` solo puede ser un anillo sin difuminado.",
+      "**Don't** usar los colores de instrumento para estados, botones o decoración, ni el rojo o el ámbar de estado para representar instrumentos.",
+      "**Don't** comunicar un estado solo con color: M/S llevan letra y los avisos llevan texto o icono.",
+      "**Don't** introducir un segundo color de acento.",
+      "**Don't** poner faders en vertical ni controles que crezcan a lo alto en el mezclador.",
+      "**Don't** convertir las listas de extracciones o de pistas en rejillas de tarjetas: son filas con columnas fijas.",
+      "**Don't** hacer translúcidos los paneles: la translucidez queda reservada a la superposición de arrastrar y soltar.",
+      "**Don't** poner texto blanco sobre `accent`, `danger` o `warning`: va en `surface`.",
+      "**Don't** bajar de 11 px en ningún texto."
+    ]
+  }
+}

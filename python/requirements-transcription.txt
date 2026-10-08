@@ -1,0 +1,14 @@
+# Transcripción del bajo para el modo práctica (python/transcribe.py): Basic Pitch de
+# Spotify con su modelo ONNX, que viene dentro del paquete (sin descargas).
+#
+# basic-pitch se instala APARTE y sin dependencias: para Python >= 3.11 declara
+# TensorFlow < 2.15.1, que no existe para Python 3.12 (pip no podría resolverlo), y
+# aquí no hace falta porque el modelo corre con onnxruntime (ya lo trae audio-separator).
+#   pip install --no-deps basic-pitch==0.4.0
+#   pip install -r requirements-transcription.txt -c torch-pins.txt
+#
+# scripts/setup-python.ps1, scripts/setup-python.sh y docker/engine.Dockerfile hacen esto por ti.
+librosa>=0.10
+resampy>=0.4
+pretty_midi>=0.2.10
+mir_eval>=0.7

@@ -1,0 +1,36 @@
+[package]
+name = "audioextract"
+version = "0.4.0"
+description = "Separación local de canciones en pistas por instrumento"
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+# El sufijo `_lib` evita el conflicto de nombres con el binario en Windows.
+name = "audioextract_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "~2.7", features = [] }
+
+[dependencies]
+# Misma versión menor que los paquetes @tauri-apps/* de package.json: el CLI de
+# Tauri se niega a compilar si no coinciden.
+# `protocol-asset` habilita asset:// para que el webview lea las pistas generadas.
+tauri = { version = "~2.12", features = ["protocol-asset"] }
+tauri-plugin-dialog = "~2.8"
+tauri-plugin-opener = "~2.6"
+tauri-plugin-process = "~2.4"
+tauri-plugin-updater = "~2.13"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+# Borrar extracciones de la biblioteca enviándolas a la papelera del sistema.
+trash = "5"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
