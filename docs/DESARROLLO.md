@@ -105,7 +105,7 @@ Vite sustituye `import.meta.env.MODE` al compilar, así que el modo demo no lleg
 | `npm run docker:test` | Compila los tests de Rust para Windows y los ejecuta |
 | `npm run nsis:template` | Regenera la plantilla NSIS parcheada (tras actualizar Tauri) |
 | `npm run updater:setup -- --repo u/r` | Claves de firma y URL del actualizador |
-| `npm run version:set -- 0.3.0` | Cambia la versión en package.json, package-lock y Cargo.toml |
+| `npm run version:set -- minor` | Sube la versión (`patch`, `minor`, `major` o un número) en todos los archivos y cierra «Sin publicar» del CHANGELOG |
 
 ## Tests y comprobaciones
 

@@ -46,7 +46,7 @@ export interface MixState {
   version: 1;
   masterFader: number;
   masterSemitones: number;
-  /** Tempo global en porcentaje de la velocidad original; falta en mezclas de antes de la 0.4. */
+  /** Tempo global en porcentaje de la velocidad original; falta en mezclas guardadas antes de que existiera el tempo. */
   tempo?: number;
   tracks: Partial<Record<StemId, MixTrack>>;
 }

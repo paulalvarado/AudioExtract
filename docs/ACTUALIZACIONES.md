@@ -36,6 +36,32 @@ npm run nsis:template     # descarga la plantilla de esa versión y reaplica el 
 
 Si el parche no encaja (Tauri cambió la plantilla), el script falla indicando qué ancla falta.
 
+## Política de versiones
+
+AudioExtract usa [SemVer](https://semver.org/lang/es/): `MAYOR.MENOR.PARCHE`, empezando en **1.0.0**
+(la primera versión pública; las 0.x fueron versiones de desarrollo que no se publicaron). El número
+dice al usuario cuánto cambia la app al actualizar, así que se elige por lo que nota quien la usa, no
+por el trabajo que costó el cambio:
+
+| Sube | Cuándo | Ejemplos |
+|------|--------|----------|
+| **PARCHE** `1.2.3 → 1.2.4` | Arreglos y ajustes: lo que ya había funciona mejor, nada nuevo que aprender. | Un fallo corregido, un texto o un espaciado, rendimiento, dependencias, cambios internos, documentación. |
+| **MENOR** `1.2.3 → 1.3.0` | Algo nuevo que el usuario puede hacer, sin romper nada de lo que tenía. | Un instrumento, un control, un formato de exportación, un modo nuevo. |
+| **MAYOR** `1.2.3 → 2.0.0` | El usuario tiene que hacer algo o pierde algo al actualizar. | Hay que reconstruir el motor a mano, la biblioteca o las mezclas guardadas dejan de abrirse, se quita una función, deja de funcionar en un sistema que antes funcionaba. |
+
+Reglas de trabajo:
+
+- **Cada cambio se anota en «Sin publicar»** del CHANGELOG al hacerlo (Añadido, Cambiado, Corregido,
+  Eliminado). Si un cambio sería mayor, se busca primero la forma de que no lo sea: por ejemplo, que la
+  app migre las mezclas antiguas o complete el motor por sí misma.
+- **Una versión agrupa todo lo que hay en «Sin publicar»** y sube un solo escalón: el del cambio más
+  grande. Tres arreglos y una función nueva son una sola versión menor, no tres parches y una menor.
+- **No hay números de relleno**: no se salta de la 1.2 a la 2.0 por marketing ni se reutiliza un
+  número ya publicado. Si una versión sale con un fallo, se corrige con otra versión (parche); una
+  etiqueta publicada no se mueve.
+- **El motor tiene su propia versión** (el `protocol` de `--check`, ver más abajo) y no sigue a la de la
+  app: la app 1.4 puede usar el motor 2.
+
 ## Publicar una versión
 
 ### Una sola vez: preparar el actualizador
@@ -63,16 +89,24 @@ Esto:
 ### Cada versión
 
 ```bash
-npm run version:set -- 0.3.0      # package.json, package-lock.json y Cargo.toml
-# añade las novedades a CHANGELOG.md
-git commit -am "Versión 0.3.0"
-git tag v0.3.0
+npm run version:set -- minor      # o patch / major / 1.3.0 — ver «Política de versiones»
+npm run docker:app                # release/AudioExtract_<versión>_x64-setup.exe para probarlo
+git commit -am "Versión 1.3.0"
+git tag -a v1.3.0 -m "Versión 1.3.0"   # anotada: --follow-tags solo sube estas
 git push --follow-tags
 ```
 
-La etiqueta dispara `.github/workflows/release.yml`, que compila el instalador de Windows y la app de
-macOS (Apple Silicon), crea la GitHub Release y, con los secretos de firma, sube también los `.sig` y
-`latest.json`. A partir de ahí, las apps instaladas con el actualizador configurado verán el aviso.
+`version:set` cambia la versión en `package.json`, `package-lock.json`, `src-tauri/Cargo.toml` y
+`Cargo.lock`, y pasa la sección «Sin publicar» del CHANGELOG a la versión nueva con la fecha de hoy.
+Se niega si la versión no sube, si «Sin publicar» está vacía o si pides `patch` habiendo novedades en
+«Añadido».
+
+La etiqueta dispara `.github/workflows/release.yml`. Primero `scripts/check-version.mjs` comprueba que
+la etiqueta, la versión de todos esos archivos y el CHANGELOG coinciden (la CI lo comprueba también en
+cada push). Después compila el instalador de Windows y la app de macOS (Apple Silicon), crea la GitHub
+Release con las novedades de esa versión copiadas del CHANGELOG y, con los secretos de firma, sube
+también los `.sig` y `latest.json`. A partir de ahí, las apps instaladas con el actualizador
+configurado verán el aviso con esas mismas novedades.
 
 Sin los secretos, la publicación funciona igual pero sin artefactos del actualizador: los usuarios
 actualizan ejecutando el instalador nuevo.
@@ -94,13 +128,13 @@ y sube a la release el instalador, su `.sig` y un `latest.json` como este:
 
 ```json
 {
-  "version": "0.3.0",
+  "version": "1.3.0",
   "notes": "Novedades…",
   "pub_date": "2026-10-01T12:00:00Z",
   "platforms": {
     "windows-x86_64": {
       "signature": "<contenido del .sig>",
-      "url": "https://github.com/<usuario>/<repositorio>/releases/download/v0.3.0/AudioExtract_0.3.0_x64-setup.exe"
+      "url": "https://github.com/<usuario>/<repositorio>/releases/download/v1.3.0/AudioExtract_1.3.0_x64-setup.exe"
     }
   }
 }

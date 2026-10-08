@@ -1,7 +1,10 @@
 [package]
 name = "audioextract"
-version = "0.4.0"
+version = "1.0.0"
 description = "Separación local de canciones en pistas por instrumento"
+authors = ["Paúl Pérez"]
+license = "GPL-3.0-or-later"
+repository = "https://github.com/paulalvarado/AudioExtract"
 edition = "2021"
 rust-version = "1.77.2"
 

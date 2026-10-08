@@ -218,7 +218,7 @@ export function installMocks(): void {
       const args = (raw ?? {}) as Record<string, unknown>;
       switch (cmd) {
         case "app_info":
-          return { version: "0.3.2", updater: true };
+          return { version: "1.0.0", updater: true };
         case "engine_status":
           if (firstCheck) {
             firstCheck = false;
@@ -274,8 +274,8 @@ export function installMocks(): void {
           return params.has("update")
             ? {
                 rid: 1,
-                currentVersion: "0.4.0",
-                version: "0.5.0",
+                currentVersion: "1.0.0",
+                version: "1.1.0",
                 date: new Date().toISOString(),
                 body: "· Separación por lotes.\n· Bucle A–B para repetir un pasaje.",
                 rawJson: {},

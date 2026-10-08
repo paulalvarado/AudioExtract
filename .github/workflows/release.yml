@@ -1,6 +1,7 @@
-# Publica una versión al empujar una etiqueta v* (p. ej. v0.3.0):
+# Publica una versión al empujar una etiqueta v* (p. ej. v1.2.0):
+#   · comprueba que la etiqueta, la versión de la app y el CHANGELOG coinciden,
 #   · compila el instalador de Windows (NSIS) y la app de macOS (Apple Silicon),
-#   · los adjunta a una GitHub Release,
+#   · los adjunta a una GitHub Release con las novedades de esa versión del CHANGELOG,
 #   · y, si están los secretos de firma, genera latest.json para el actualizador integrado.
 #
 # Preparación (una vez): npm run updater:setup -- --repo <usuario>/<repositorio>
@@ -39,6 +40,10 @@ jobs:
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+      - name: Comprobar la versión y leer sus novedades
+        id: version
+        shell: bash
+        run: node scripts/check-version.mjs ${{ github.ref_type == 'tag' && format('--tag {0}', github.ref_name) || '' }}
       - run: npm ci
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -46,12 +51,16 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: AudioExtract ${{ github.ref_name }}
-          releaseBody: >-
-            Novedades en CHANGELOG.md. Si ya tienes AudioExtract instalado, ejecuta el instalador
-            nuevo encima (conserva tu biblioteca) o actualiza desde la propia app.
-            El motor de separación se construye aparte: npm run docker:engine (ver README).
+          # Lanzado a mano (workflow_dispatch), la etiqueta sale de la versión de package.json.
+          tagName: v${{ steps.version.outputs.version }}
+          releaseName: AudioExtract ${{ steps.version.outputs.version }}
+          # También es el texto del aviso de actualización dentro de la app.
+          releaseBody: |
+            ${{ steps.version.outputs.notes }}
+
+            ---
+            Si ya tienes AudioExtract instalado, ejecuta el instalador nuevo encima (conserva tu
+            biblioteca) o actualiza desde la propia app.
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true

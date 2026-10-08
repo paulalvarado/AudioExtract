@@ -41,10 +41,13 @@
     "active": true,
     "targets": "all",
     "category": "Music",
+    "copyright": "© 2026 Paúl Pérez · GPL-3.0-or-later",
+    "license": "GPL-3.0-or-later",
     "shortDescription": "Separa canciones en pistas por instrumento, en tu propio equipo",
     "longDescription": "AudioExtract separa una canción en voces, batería, bajo, guitarra, piano, viento y otros con modelos abiertos (Demucs, BS-RoFormer, UVR) que se ejecutan en local. Incluye un mezclador con transposición por semitonos, exportación a WAV o MP3 y una biblioteca de extracciones.",
     "createUpdaterArtifacts": false,
     "resources": {
+      "../LICENSE": "LICENSE",
       "../python/separate.py": "python/separate.py",
       "../python/transcribe.py": "python/transcribe.py",
       "../python/catalog.py": "python/catalog.py",
@@ -69,8 +72,10 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "",
-      "endpoints": [],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY0RTU4QUY2NDYzOTFBQzIKUldUQ0dqbEc5b3JsOUcwUVc4UUpvL0Jsa3F0Sm52OW9oL2FKOFZFaDhjWC9FNUhFTW1FRmlMS0YK",
+      "endpoints": [
+        "https://github.com/paulalvarado/AudioExtract/releases/latest/download/latest.json"
+      ],
       "windows": {
         "installMode": "passive"
       }

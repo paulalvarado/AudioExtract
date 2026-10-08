@@ -20,6 +20,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - run: node scripts/check-version.mjs
       - run: npm ci
       - run: npm run build
 

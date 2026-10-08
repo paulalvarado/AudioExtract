@@ -78,8 +78,12 @@ La guía completa, con macOS, instalación sin Docker y solución de problemas, 
 
 ## Licencias
 
-El código de AudioExtract aún no tiene licencia elegida (pendiente del propietario del repositorio).
-Usa componentes con licencias propias: Demucs y audio-separator (MIT), Basic Pitch (Apache-2.0, con su
+AudioExtract es software libre: © 2026 Paúl Pérez, bajo la
+[Licencia Pública General de GNU, versión 3 o posterior](LICENSE) (GPL-3.0-or-later). Puedes usarlo,
+estudiarlo, modificarlo y redistribuirlo, también cobrando; si distribuyes una versión modificada, su
+código tiene que publicarse con esta misma licencia. Se ofrece sin ninguna garantía.
+
+Usa componentes con licencias propias, todas compatibles con la GPL 3: Demucs y audio-separator (MIT), Basic Pitch (Apache-2.0, con su
 modelo incluido en el paquete), Signalsmith Stretch (MIT),
 Tauri (MIT/Apache-2.0), LAME a través de wasm-media-encoders (LGPL, cargado como archivo aparte) y los
 pesos de cada modelo, que se descargan de sus repositorios oficiales al construir el motor (ver

@@ -86,7 +86,7 @@ Una línea JSON por mensaje en stdout:
   la barra se calcula con el coste medido de cada paso en GPU y en CPU.
 - **Compatibilidad**: un motor de la versión 1 (sin `capabilities`, `done` sin `stems`) sigue
   funcionando con 4 pistas; la app no le pasa `--instruments` ni `--quality` y avisa de que conviene
-  reconstruirlo. Una imagen nueva también funciona con la app 0.1.
+  reconstruirlo. Una imagen nueva también funciona con versiones anteriores de la app.
 
 ## Modo práctica: transcripción del bajo
 

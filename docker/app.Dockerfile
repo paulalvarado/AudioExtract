@@ -55,7 +55,7 @@ FROM toolchain AS build
 # Python): sin eso, una versión nueva no funcionaría con la imagen del motor que ya hay instalada.
 # Solo se exporta el instalador de esta versión (la caché guarda también los de versiones anteriores).
 # /root/.cache/tauri guarda las utilidades de NSIS que Tauri baja de GitHub: sin caché las descargaba en
-# cada construcción, y esa descarga no tiene tiempo de espera (en la 0.4.0 se quedó colgada).
+# cada construcción, y esa descarga no tiene tiempo de espera (una vez dejó la construcción colgada).
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/root/.cache/cargo-xwin \
