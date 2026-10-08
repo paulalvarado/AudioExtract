@@ -976,10 +976,8 @@ fn remove_files_with_extension(dir: &Path, extension: &str) {
         let path = entry.path();
         match entry.file_type() {
             Ok(kind) if kind.is_dir() => remove_files_with_extension(&path, extension),
-            Ok(kind) if kind.is_file() => {
-                if path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case(extension)) {
-                    let _ = fs::remove_file(&path);
-                }
+            Ok(kind) if kind.is_file() && path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case(extension)) => {
+                let _ = fs::remove_file(&path);
             }
             _ => {}
         }
