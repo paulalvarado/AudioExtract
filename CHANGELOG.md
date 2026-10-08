@@ -8,6 +8,11 @@ versión requiere reconstruir el motor.
 
 ## [Sin publicar]
 
+### Cambiado
+
+- Las versiones de Windows se publican solo con el instalador `.exe`: el `.msi` (solo en inglés y sin la
+  actualización encima sin preguntar) ya no se genera.
+
 ## [1.0.0] — 2026-10-07
 
 **No requiere reconstruir el motor**: si ya tenías instalada una versión de desarrollo (0.x), instala

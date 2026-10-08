@@ -39,7 +39,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis", "app", "dmg"],
     "category": "Music",
     "copyright": "© 2026 Paúl Pérez · GPL-3.0-or-later",
     "license": "GPL-3.0-or-later",
