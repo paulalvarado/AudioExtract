@@ -181,3 +181,13 @@ export const DownloadIcon = (props: IconProps) => (
     <path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" />
   </svg>
 );
+
+/** Bucle: dos flechas que se persiguen en un rectángulo redondeado. */
+export const LoopIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M17 3.5 20 6.5l-3 3" />
+    <path d="M4 11.5v-1a4 4 0 0 1 4-4h12" />
+    <path d="M7 20.5 4 17.5l3-3" />
+    <path d="M20 12.5v1a4 4 0 0 1-4 4H4" />
+  </svg>
+);

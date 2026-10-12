@@ -11,7 +11,7 @@ use tauri_plugin_opener::OpenerExt;
 
 use crate::engine::{
     self, EngineState, EngineStatus, NoteEvent, SeparationEvent, SeparationJob, SeparationRequest, SeparationState,
-    TranscriptionState,
+    Transcribed, TranscriptionState,
 };
 use crate::error::AppError;
 use crate::export::{self, ExportState};
@@ -154,19 +154,19 @@ pub async fn cancel_separation(app: AppHandle) -> bool {
         .unwrap_or(false)
 }
 
-/// Notas de la pista de bajo de la extracción `id`, para el modo práctica.
-/// La primera vez las transcribe el motor a partir de su `bass.wav` (unos segundos);
-/// después se leen de `bass.notes.json`, junto a la pista.
+/// Notas de la pista de bajo o de piano de la extracción `id`, para el modo práctica.
+/// La primera vez las transcribe el motor a partir de su `.wav` (unos segundos);
+/// después se leen de `<pista>.notes.json`, junto a la pista.
 #[tauri::command]
-pub async fn generate_bass_tab(app: AppHandle, id: String) -> Result<Vec<NoteEvent>, AppError> {
+pub async fn transcribe_stem(app: AppHandle, id: String, stem: Transcribed) -> Result<Vec<NoteEvent>, AppError> {
     blocking(move || {
-        let bass = current_library(&app).bass_file(&id)?;
-        if let Some(notes) = library::read_bass_notes(&bass) {
+        let track = current_library(&app).track_file(&id, stem)?;
+        if let Some(notes) = library::read_notes(&track) {
             return Ok(notes);
         }
-        let notes = engine::transcribe(&app.state::<TranscriptionState>(), &bass)?;
+        let notes = engine::transcribe(&app.state::<TranscriptionState>(), &track, stem)?;
         // Sin caché solo se pierde la rapidez de la próxima vez: no es motivo para fallar.
-        let _ = library::write_bass_notes(&bass, &notes);
+        let _ = library::write_notes(&track, &notes);
         Ok(notes)
     })
     .await

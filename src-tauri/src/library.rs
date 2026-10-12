@@ -9,6 +9,7 @@
 //! │   ├── entry.json        metadatos y mezcla guardada
 //! │   ├── vocals.wav        una pista por instrumento, WAV 16 bits
 //! │   ├── bass.notes.json   notas del bajo (modo práctica), si ya se transcribió
+//! │   ├── piano.notes.json  notas del piano (modo práctica), si ya se transcribió
 //! │   └── …
 //! ├── Mi canción (2)/
 //! └── .staging/             separaciones en curso (se vacía al arrancar)
@@ -24,21 +25,22 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::{Deserialize, Serialize};
 
-use crate::engine::{unix_millis, NoteEvent, Quality};
+use crate::engine::{unix_millis, NoteEvent, Quality, Transcribed};
 use crate::error::AppError;
 
 pub const ENTRY_FILE: &str = "entry.json";
 const STAGING_DIR: &str = ".staging";
 pub const ENTRY_VERSION: u32 = 1;
 const MAX_NAME_CHARS: usize = 60;
-/// Notas del bajo ya transcritas, junto a `bass.wav`: el modo práctica se abre al instante.
-pub const BASS_NOTES_FILE: &str = "bass.notes.json";
+/// Notas ya transcritas, junto a su pista (`bass.notes.json` junto a `bass.wav`): el modo
+/// práctica se abre al instante.
+pub const NOTES_SUFFIX: &str = ".notes.json";
 /// Subirlo invalida las transcripciones guardadas (p. ej., al cambiar de modelo o de limpieza).
-const BASS_NOTES_VERSION: u32 = 1;
+const NOTES_VERSION: u32 = 1;
 
-/// Contenido de `bass.notes.json` (se escribe con `write_bass_notes`).
+/// Contenido de `<pista>.notes.json` (se escribe con `write_notes`).
 #[derive(Debug, Deserialize)]
-struct BassNotes {
+struct SavedNotes {
     version: u32,
     notes: Vec<NoteEvent>,
 }
@@ -222,16 +224,18 @@ impl Library {
         })
     }
 
-    /// `bass.wav` de una extracción, para transcribirlo. Falla si el `id` no es válido o
-    /// si la extracción no tiene pista de bajo (o ya no está en el disco).
-    pub fn bass_file(&self, id: &str) -> Result<PathBuf, AppError> {
+    /// Pista de una extracción que se va a transcribir (`bass.wav`, `piano.wav`). Falla si
+    /// el `id` no es válido o si la extracción no tiene esa pista (o ya no está en el disco).
+    pub fn track_file(&self, id: &str, instrument: Transcribed) -> Result<PathBuf, AppError> {
         let dir = self.dir_of(id)?;
         let entry = read_entry(&dir)?;
-        let path = dir.join("bass.wav");
-        if !entry.stems.iter().any(|stem| stem == "bass") || !path.is_file() {
+        let stem = instrument.stem();
+        let path = dir.join(format!("{stem}.wav"));
+        if !entry.stems.iter().any(|s| s == stem) || !path.is_file() {
             return Err(AppError::Library(format!(
-                "«{}» no tiene pista de bajo en el disco: no se puede abrir el modo práctica.",
-                entry.title
+                "«{}» no tiene pista de {} en el disco: no se puede abrir el modo práctica.",
+                entry.title,
+                instrument.label()
             )));
         }
         Ok(path)
@@ -270,23 +274,29 @@ fn write_atomic(path: &Path, bytes: &[u8]) -> Result<(), AppError> {
     Ok(())
 }
 
-/// Notas de una transcripción anterior de `bass`, si siguen valiendo: misma versión
-/// de formato y guardadas después de la última modificación de `bass.wav`.
-pub fn read_bass_notes(bass: &Path) -> Option<Vec<NoteEvent>> {
-    let cache = bass.with_file_name(BASS_NOTES_FILE);
+/// Archivo de notas de una pista: `bass.wav` → `bass.notes.json`.
+pub fn notes_file(track: &Path) -> PathBuf {
+    let stem = track.file_stem().map(|stem| stem.to_string_lossy()).unwrap_or_default();
+    track.with_file_name(format!("{stem}{NOTES_SUFFIX}"))
+}
+
+/// Notas de una transcripción anterior de `track`, si siguen valiendo: misma versión
+/// de formato y guardadas después de la última modificación de la pista.
+pub fn read_notes(track: &Path) -> Option<Vec<NoteEvent>> {
+    let cache = notes_file(track);
     let saved_at = fs::metadata(&cache).and_then(|meta| meta.modified()).ok()?;
-    let audio_at = fs::metadata(bass).and_then(|meta| meta.modified()).ok()?;
+    let audio_at = fs::metadata(track).and_then(|meta| meta.modified()).ok()?;
     if saved_at < audio_at {
         return None;
     }
-    let saved: BassNotes = serde_json::from_slice(&fs::read(&cache).ok()?).ok()?;
-    (saved.version == BASS_NOTES_VERSION).then_some(saved.notes)
+    let saved: SavedNotes = serde_json::from_slice(&fs::read(&cache).ok()?).ok()?;
+    (saved.version == NOTES_VERSION).then_some(saved.notes)
 }
 
-/// Guarda las notas junto a `bass` para no volver a transcribirlo.
-pub fn write_bass_notes(bass: &Path, notes: &[NoteEvent]) -> Result<(), AppError> {
-    let saved = serde_json::json!({ "version": BASS_NOTES_VERSION, "notes": notes });
-    write_atomic(&bass.with_file_name(BASS_NOTES_FILE), &serde_json::to_vec(&saved)?)
+/// Guarda las notas junto a `track` para no volver a transcribirla.
+pub fn write_notes(track: &Path, notes: &[NoteEvent]) -> Result<(), AppError> {
+    let saved = serde_json::json!({ "version": NOTES_VERSION, "notes": notes });
+    write_atomic(&notes_file(track), &serde_json::to_vec(&saved)?)
 }
 
 /// Nombre de carpeta válido en Windows, macOS y Linux a partir de un título.
@@ -414,19 +424,24 @@ mod tests {
     }
 
     #[test]
-    fn finds_the_bass_track_and_caches_its_notes() {
+    fn finds_the_transcribed_tracks_and_caches_their_notes() {
         let library = temp_library("bass");
         let mut entry = sample_entry("Con bajo");
-        entry.stems = vec!["vocals".into(), "bass".into(), "other".into()];
+        entry.stems = vec!["vocals".into(), "bass".into(), "piano".into(), "other".into()];
         let staging = staged(&library);
         fs::write(staging.join("bass.wav"), b"RIFF").unwrap();
+        fs::write(staging.join("piano.wav"), b"RIFF").unwrap();
         let item = library.commit(&staging, &entry).unwrap();
         let without = library.commit(&staged(&library), &sample_entry("Sin bajo")).unwrap();
 
-        assert!(library.bass_file(&without.id).is_err());
-        assert!(library.bass_file("../Con bajo").is_err());
-        let bass = library.bass_file(&item.id).unwrap();
-        assert!(read_bass_notes(&bass).is_none());
+        assert!(library.track_file(&without.id, Transcribed::Bass).is_err());
+        assert!(library.track_file(&without.id, Transcribed::Piano).is_err());
+        assert!(library.track_file("../Con bajo", Transcribed::Bass).is_err());
+        let bass = library.track_file(&item.id, Transcribed::Bass).unwrap();
+        let piano = library.track_file(&item.id, Transcribed::Piano).unwrap();
+        assert_eq!(notes_file(&bass), bass.with_file_name("bass.notes.json"));
+        assert_eq!(notes_file(&piano), piano.with_file_name("piano.notes.json"));
+        assert!(read_notes(&bass).is_none());
 
         let notes = vec![NoteEvent {
             note: "A1".into(),
@@ -434,14 +449,16 @@ mod tests {
             start_time_ms: 0,
             end_time_ms: 250,
         }];
-        write_bass_notes(&bass, &notes).unwrap();
-        assert_eq!(read_bass_notes(&bass), Some(notes));
-        assert_eq!(library.load(&item.id).unwrap().entry.stems.len(), 3);
+        write_notes(&bass, &notes).unwrap();
+        assert_eq!(read_notes(&bass), Some(notes));
+        // Cada pista tiene sus propias notas.
+        assert!(read_notes(&piano).is_none());
+        assert_eq!(library.load(&item.id).unwrap().entry.stems.len(), 4);
 
-        // Un bass.wav más reciente que las notas guardadas obliga a transcribir otra vez.
+        // Una pista más reciente que las notas guardadas obliga a transcribir otra vez.
         let later = std::time::SystemTime::now() + std::time::Duration::from_secs(60);
         fs::File::options().write(true).open(&bass).unwrap().set_modified(later).unwrap();
-        assert!(read_bass_notes(&bass).is_none());
+        assert!(read_notes(&bass).is_none());
 
         // Un formato de otra versión tampoco vale.
         fs::File::options()
@@ -450,8 +467,8 @@ mod tests {
             .unwrap()
             .set_modified(std::time::SystemTime::now() - std::time::Duration::from_secs(60))
             .unwrap();
-        fs::write(bass.with_file_name(BASS_NOTES_FILE), br#"{"version":99,"notes":[]}"#).unwrap();
-        assert!(read_bass_notes(&bass).is_none());
+        fs::write(notes_file(&bass), br#"{"version":99,"notes":[]}"#).unwrap();
+        assert!(read_notes(&bass).is_none());
         let _ = fs::remove_dir_all(library.root());
     }
 

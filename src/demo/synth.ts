@@ -1,5 +1,5 @@
 import { midiToName } from "../lib/bass-tab";
-import type { BassNote, StemId } from "../types";
+import type { NoteEvent, StemId } from "../types";
 
 // Pistas sintéticas para el modo demo: una canción corta a 100 BPM sobre
 // La m – Fa – Do – Sol, con un timbre reconocible por instrumento.
@@ -28,8 +28,8 @@ const bassMidiAt = (time: number) => chordAt(time)[0] - 24 + BASS_STEPS[Math.flo
 const BASS_SUSTAIN = 0.85;
 
 /** Las notas exactas que toca el bajo sintético, como las devolvería la transcripción del motor. */
-export function synthBassNotes(seconds: number): BassNote[] {
-  const notes: BassNote[] = [];
+export function synthBassNotes(seconds: number): NoteEvent[] {
+  const notes: NoteEvent[] = [];
   for (let beat = 0; beat * BEAT < seconds - 0.05; beat++) {
     const start = beat * BEAT;
     const midi = bassMidiAt(start + 0.001);
@@ -41,6 +41,29 @@ export function synthBassNotes(seconds: number): BassNote[] {
     });
   }
   return notes;
+}
+
+/** Piano: los acordes una octava arriba (mano derecha) y la fundamental una abajo (izquierda). */
+const PIANO_RIGHT_SHIFT = 12;
+const PIANO_LEFT_SHIFT = -12;
+
+/** Las notas exactas que toca el piano sintético: acordes cada medio compás y la fundamental en cada compás. */
+export function synthPianoNotes(seconds: number): NoteEvent[] {
+  const notes: NoteEvent[] = [];
+  const push = (midi: number, start: number, length: number) =>
+    notes.push({
+      note: midiToName(midi),
+      frequency: Math.round(hz(midi) * 100) / 100,
+      startTimeMs: Math.round(start * 1000),
+      endTimeMs: Math.round(Math.min(start + length, seconds) * 1000),
+    });
+  for (let half = 0; (half * BAR) / 2 < seconds - 0.05; half++) {
+    const start = (half * BAR) / 2;
+    const chord = chordAt(start + 0.001);
+    if (half % 2 === 0) push(chord[0] + PIANO_LEFT_SHIFT, start, BAR * 0.95);
+    for (const note of chord) push(note + PIANO_RIGHT_SHIFT, start, (BAR / 2) * 0.85);
+  }
+  return notes.sort((a, b) => a.startTimeMs - b.startTimeMs);
 }
 
 function noise(seed: number): () => number {
@@ -109,9 +132,12 @@ export function synthStem(id: StemId, seconds: number): Float32Array[] {
         const hit = t % (BAR / 2);
         const decay = Math.exp(-hit * 2.2);
         for (const note of chord) {
-          const f = hz(note + 12);
+          const f = hz(note + PIANO_RIGHT_SHIFT);
           value += (Math.sin(2 * Math.PI * f * t) + 0.4 * Math.sin(4 * Math.PI * f * t) + 0.15 * Math.sin(6 * Math.PI * f * t)) * decay;
         }
+        // Mano izquierda: la fundamental grave, una vez por compás.
+        const root = hz(chord[0] + PIANO_LEFT_SHIFT);
+        value += (Math.sin(2 * Math.PI * root * t) + 0.3 * Math.sin(4 * Math.PI * root * t)) * Math.exp(-(t % BAR) * 1.1) * 0.9;
         value *= 0.16;
         break;
       }

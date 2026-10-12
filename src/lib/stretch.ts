@@ -1,4 +1,5 @@
 import type { StretchNode } from "signalsmith-stretch";
+import type { LoopRange } from "../types";
 
 export type { StretchNode };
 
@@ -52,17 +53,26 @@ export class StretchLane {
     private readonly buffer: AudioBuffer,
   ) {}
 
-  /** Vacía el procesador y carga el audio alrededor de `seconds`. */
-  reset(seconds: number): Promise<unknown> {
+  /** Vacía el procesador y carga el audio alrededor de `seconds` (y desde el inicio de `loop`, si lo hay). */
+  reset(seconds: number, loop: LoopRange | null = null): Promise<unknown> {
     const rate = this.buffer.sampleRate;
-    this.base = clamp(Math.round((seconds - PREROLL_SECONDS) * rate), 0, this.buffer.length);
+    this.base = clamp(Math.round((Math.min(seconds, loop?.start ?? seconds) - PREROLL_SECONDS) * rate), 0, this.buffer.length);
     this.fed = this.base;
     this.chunks = [];
-    return Promise.all([this.node.dropBuffers(), this.feed(seconds)]);
+    return Promise.all([this.node.dropBuffers(), this.feed(seconds, loop)]);
   }
 
-  /** Mantiene cargado el audio que va a sonar a partir de `seconds` y libera el que ya sonó. */
-  feed(seconds: number): Promise<unknown> {
+  /** Si el procesador aún tiene el audio necesario para repetir `loop` (no se liberó su principio). */
+  holds(loop: LoopRange): boolean {
+    const rate = this.buffer.sampleRate;
+    return this.base <= Math.max(0, Math.round((loop.start - PREROLL_SECONDS) * rate));
+  }
+
+  /**
+   * Mantiene cargado el audio que va a sonar a partir de `seconds` y libera el que ya sonó.
+   * Con un bucle, lo que va desde su inicio se conserva: el procesador vuelve allí solo.
+   */
+  feed(seconds: number, loop: LoopRange | null = null): Promise<unknown> {
     const rate = this.buffer.sampleRate;
     const sent: Promise<unknown>[] = [];
     const until = Math.min(Math.round((seconds + AHEAD_SECONDS) * rate), this.buffer.length);
@@ -82,7 +92,7 @@ export class StretchLane {
     }
 
     // El procesador libera trozos enteros: se pide solo cuando el primero ya sobra.
-    const keep = Math.round((seconds - BEHIND_SECONDS) * rate);
+    const keep = Math.round(Math.min(seconds - BEHIND_SECONDS, loop ? loop.start - PREROLL_SECONDS : Infinity) * rate);
     if (this.chunks.length > 1 && this.chunks[0] <= keep) {
       while (this.chunks.length > 1 && this.chunks[0] <= keep) this.chunks.shift();
       sent.push(this.node.dropBuffers((keep - this.base) / rate));
@@ -90,14 +100,21 @@ export class StretchLane {
     return Promise.all(sent);
   }
 
-  /** Desde el instante `at` del contexto suena la posición `position` de la canción, a `rate`. */
-  play(at: number, position: number, rate: number, semitones: number): Promise<unknown> {
+  /**
+   * Desde el instante `at` del contexto suena la posición `position` de la canción, a `rate`.
+   * Con `loop`, al llegar a su final el procesador vuelve a su inicio sin cortes.
+   */
+  play(at: number, position: number, rate: number, semitones: number, loop: LoopRange | null = null): Promise<unknown> {
+    const base = this.base / this.buffer.sampleRate;
     return this.node.schedule({
       active: true,
-      input: position - this.base / this.buffer.sampleRate,
+      input: position - base,
       rate,
       semitones,
       output: at,
+      // Iguales (0 y 0) desactivan el bucle.
+      loopStart: loop ? loop.start - base : 0,
+      loopEnd: loop ? loop.end - base : 0,
     });
   }
 

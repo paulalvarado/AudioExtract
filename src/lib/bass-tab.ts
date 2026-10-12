@@ -1,4 +1,4 @@
-import type { BassNote } from "../types";
+import type { NoteEvent } from "../types";
 
 /*
  * Del JSON de notas que devuelve el motor a una tablatura de bajo: qué instrumento
@@ -110,14 +110,14 @@ export function pitchClass(midi: number): string {
 }
 
 /** Nota MIDI de un evento: la de su nombre o, si no se entiende, la más cercana a su frecuencia. */
-export function eventMidi(note: BassNote): number | null {
+export function eventMidi(note: NoteEvent): number | null {
   const named = noteToMidi(note.note);
   if (named !== null) return named;
   return note.frequency > 0 ? Math.round(69 + 12 * Math.log2(note.frequency / 440)) : null;
 }
 
 /** Si alguna nota baja de E1 hace falta la cuerda B grave de un bajo de 5 cuerdas. */
-export function needsFiveStrings(notes: readonly Pick<BassNote, "frequency">[]): boolean {
+export function needsFiveStrings(notes: readonly Pick<NoteEvent, "frequency">[]): boolean {
   return notes.some((note) => note.frequency > 0 && note.frequency < BELOW_E1_HZ);
 }
 
@@ -125,7 +125,7 @@ export function needsFiveStrings(notes: readonly Pick<BassNote, "frequency">[]):
  * Tablatura de las notas del motor, transpuestas `semitones` (los que suenan en la
  * pista de bajo: los suyos más los globales), en un bajo de 4 o 5 cuerdas según haga falta.
  */
-export function buildBassTab(source: readonly BassNote[], semitones = 0): BassTab {
+export function buildBassTab(source: readonly NoteEvent[], semitones = 0): BassTab {
   const ratio = 2 ** (semitones / 12);
   const strings = needsFiveStrings(source.map((note) => ({ frequency: note.frequency * ratio })))
     ? FIVE_STRINGS

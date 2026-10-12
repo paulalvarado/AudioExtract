@@ -23,7 +23,7 @@
 ┌───────────▼────────────────────────────────────────────────────────────────────┐
 │  Motor Python (integrado; también otro Python local o una imagen Docker)       │
 │  separate.py  plan → Demucs / BS-RoFormer → viento (UVR) → guardar pistas      │
-│  transcribe.py bass.wav → Basic Pitch (ONNX, CPU) → notas del modo práctica    │
+│  transcribe.py bass/piano.wav → Basic Pitch (ONNX, CPU) → notas (m. práctica)  │
 │  catalog.py   modelos disponibles, descarga (--prefetch), disponibilidad       │
 │  stdout: una línea JSON por mensaje · stderr: todo lo demás                    │
 └────────────────────────────────────────────────────────────────────────────────┘
@@ -139,14 +139,16 @@ Una línea JSON por mensaje en stdout:
   funcionando con 4 pistas; la app no le pasa `--instruments` ni `--quality` y avisa de que conviene
   reconstruirlo. Una imagen nueva también funciona con versiones anteriores de la app.
 
-## Modo práctica: transcripción del bajo
+## Modo práctica: transcripción del bajo y del piano
 
-1. La interfaz llama a `generate_bass_tab(id)`. Rust valida el `id`, comprueba que la extracción tiene
-   `bass.wav` y, si `bass.notes.json` existe, es de la versión actual y es más reciente que la pista,
-   devuelve esas notas sin lanzar nada.
-2. Si no, lanza `transcribe.py` **solo sobre `bass.wav`**, sin carpeta de salida. En Docker, la pista es
-   el único archivo de la biblioteca montado (en solo lectura, junto a los scripts de la app), sin red y
-   sin `--gpus`.
+1. La interfaz llama a `transcribe_stem(id, stem)` con `stem` = `bass` o `piano`. Rust valida el `id`,
+   comprueba que la extracción tiene esa pista y, si `<pista>.notes.json` existe, es de la versión
+   actual y es más reciente que la pista, devuelve esas notas sin lanzar nada.
+2. Si no, lanza `transcribe.py` **solo sobre esa pista** (`--instrument piano` para el piano; el bajo
+   va sin él, que es el valor por defecto, para que funcione también con el script de una imagen
+   anterior), sin carpeta de salida. En Docker, la pista es el único archivo de la biblioteca montado
+   (en solo lectura, junto a los scripts de la app), sin red y sin `--gpus`. Si el script es de antes
+   del piano y no entiende `--instrument`, el error dice que el motor solo transcribe el bajo.
 3. El script responde con una línea JSON y Rust la devuelve como respuesta del `invoke`:
 
    ```json
@@ -156,14 +158,16 @@ Una línea JSON por mensaje en stdout:
    ```
 
    Todo lo demás (el `print` interno de Basic Pitch, avisos de librerías) va a stderr. Rust descarta
-   notas sin duración o con frecuencias imposibles, las ordena y las guarda en `bass.notes.json`
-   (escritura atómica; si falla, solo se pierde la caché).
+   notas sin duración o con frecuencias imposibles, las ordena y las guarda en `bass.notes.json` o
+   `piano.notes.json` (escritura atómica; si falla, solo se pierde la caché).
 4. Separación y transcripción tienen cada una su hueco de proceso: pueden correr a la vez, pero solo hay
    una de cada tipo. Al cerrar la app se detienen las dos. `--check` declara `"transcription": true`
    cuando Basic Pitch está disponible (en el entorno o en las ruedas de la app).
 
-En la interfaz, todo el modo práctica (`src/components/practice/` y `src/lib/bass-tab.ts`) es un
-fragmento aparte que se carga con `React.lazy` al abrirlo:
+En la interfaz, cada modo práctica (`src/components/practice/`, con `src/lib/bass-tab.ts` o
+`src/lib/piano-roll.ts`) es un fragmento aparte que se carga con `React.lazy` al abrirlo.
+`PracticeShell` pone la franja superior, los estados y la petición de notas; `PracticeCanvas`, el
+lienzo sincronizado con lo que suena. En el bajo:
 
 - **Instrumento**: si alguna nota (con la transposición de la pista aplicada) está por debajo de E1
   (41,2 Hz, con medio semitono de margen) el mástil es de 5 cuerdas; si no, de 4.
@@ -175,8 +179,22 @@ fragmento aparte que se carga con `React.lazy` al abrirlo:
   dinámico encima. Mientras suena, un `requestAnimationFrame` lee `audiblePosition` del
   `MultitrackEngine`: la posición que está saliendo por el dispositivo (`getOutputTimestamp`, o la
   latencia de salida declarada), no la que se está procesando. En pausa no hay bucle: se repinta cuando
-  el motor avisa por `subscribe` (reproducir, pausar, saltar). Mientras está abierto, el mezclador solo
-  mide el vúmetro del bajo.
+  el motor avisa por `subscribe` (reproducir, pausar, saltar, cambiar el bucle). Mientras está abierto,
+  el mezclador solo mide el vúmetro de esa pista.
+
+En el piano:
+
+- **Teclado**: octavas completas de la Do bajo la nota más grave a la Si sobre la más aguda, tres como
+  mínimo, dentro de A0–C8. Una nota transpuesta que no cabe se desplaza de octava.
+- **Manos** (`assignHands`): para cada nota se miran las que empiezan un segundo antes o después. Si
+  todas caben en una décima, van a la misma mano (la izquierda si su centro está bajo el Do central);
+  si no, se parten por el mayor hueco entre alturas, penalizando los huecos lejos del Do central.
+- **Dibujo** (`piano-renderer.ts`): una capa estática (pozo, columnas, líneas de octava y teclado en
+  reposo) y encima las barras de lo que viene en ~3,2 s, las teclas que suenan y la línea «ahora».
+
+**Con el bucle encendido**, lo que se ve tras su final es otra vez su inicio. `loopView` reparte la
+vista en tramos de la canción, cada uno con su desplazamiento, y marca dónde vuelve a empezar; un clic
+salta al instante de la canción que se ve ahí.
 
 ## Biblioteca (`entry.json`)
 
@@ -204,8 +222,10 @@ fragmento aparte que se carga con `React.lazy` al abrirlo:
 
 - El `id` de cada extracción es el nombre de su carpeta. Rust rechaza cualquier `id` que no sea un
   nombre simple (sin `..`, separadores ni punto inicial).
-- `bass.notes.json` (opcional) guarda las notas del bajo ya transcritas: `{"version": 1, "notes": […]}`.
-  Viaja con la carpeta; si se borra, se vuelve a transcribir.
+- `bass.notes.json` y `piano.notes.json` (opcionales) guardan las notas ya transcritas:
+  `{"version": 1, "notes": […]}`. Viajan con la carpeta; si se borran, se vuelve a transcribir.
+- `mix.loop` (opcional) guarda la región del bucle en segundos (`{"start": 62.3, "end": 70.8}`); vuelve
+  apagada al abrir la canción.
 - `entry.json` se escribe de forma atómica (archivo temporal + renombrado).
 - La interfaz guarda la mezcla 600 ms después del último cambio.
 - El webview lee las pistas con el protocolo `asset:`, autorizado solo para la carpeta de la biblioteca.
@@ -247,6 +267,15 @@ Signalsmith Stretch ──→ procesada ─┘
   para no gastar CPU.
 - El transporte silencia hasta que llega el audio nuevo al reproducir o saltar, para que no se oiga la
   cola de la posición anterior. El cabezal se queda quieto hasta entonces.
+- **Bucle A–B sin costura**: no es un salto programado. Las fuentes directas usan `loop`, `loopStart` y
+  `loopEnd` de `AudioBufferSourceNode`, y los procesadores, `loopStart`/`loopEnd` de Signalsmith en modo
+  búfer: cada uno vuelve solo al inicio con precisión de muestra, también con el tempo cambiado. Para
+  eso, mientras hay bucle, `StretchLane` conserva el audio desde su inicio (menos 1 s) en vez de
+  liberarlo. Cada tramo del reloj lleva su bucle, y la posición se calcula con el mismo módulo. Cambiar
+  el bucle se programa como cualquier otro cambio: las fuentes directas se relevan en ese instante en la
+  misma posición, y un procesador que ya liberó el inicio del bucle lo vuelve a cargar. Un bucle de más
+  de 120 s con tono o tempo cambiados no se retiene entero (≈21 MB por pista y minuto): vuelve a su
+  inicio con un salto programado. Al encenderlo o moverlo con el cabezal fuera, salta a su inicio.
 
 ### Tempo estimado
 

@@ -3,12 +3,13 @@ import {
   isStemId,
   type AppError,
   type AppInfo,
-  type BassNote,
+  type NoteEvent,
   type EngineStatus,
   type EngineVariant,
   type LibraryItem,
   type LibraryListing,
   type MixState,
+  type PracticeStem,
   type SeparationEvent,
   type SeparationRequest,
   type SetupEvent,
@@ -56,11 +57,11 @@ export function cancelSeparation(): Promise<boolean> {
 }
 
 /**
- * Notas del bajo de una extracción para el modo práctica, en orden de inicio. La
- * primera vez el motor las transcribe (unos segundos); después salen de la biblioteca.
+ * Notas del bajo o del piano de una extracción para el modo práctica, en orden de inicio.
+ * La primera vez el motor las transcribe (unos segundos); después salen de la biblioteca.
  */
-export function generateBassTab(id: string): Promise<BassNote[]> {
-  return invoke<BassNote[]>("generate_bass_tab", { id });
+export function transcribeStem(id: string, stem: PracticeStem): Promise<NoteEvent[]> {
+  return invoke<NoteEvent[]>("transcribe_stem", { id, stem });
 }
 
 export async function libraryList(): Promise<LibraryListing> {

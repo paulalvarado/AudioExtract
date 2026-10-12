@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Transcribe la pista de bajo de una extracción a notas, para el modo práctica de AudioExtract.
+"""Transcribe la pista de bajo o de piano de una extracción a notas, para el modo práctica de AudioExtract.
 
 Sigue las reglas de `separate.py`: la app lo lanza como proceso hijo (motor integrado,
 Python local o Docker), stdout queda reservado al protocolo (una línea JSON por
@@ -18,8 +18,14 @@ Basic Pitch es polifónico y en un bajo suele detectar también armónicos (la
 octava o la quinta por encima de la nota real) y pequeños solapes entre notas
 ligadas. `to_bass_line` lo reduce a la línea monofónica que se toca.
 
+En el piano la polifonía es real (acordes, dos manos) y se conserva: `clean_piano`
+solo quita los armónicos fantasma (una octava o una quinta por encima de una nota
+que empieza a la vez, mucho más débiles que ella) y las notas casi inaudibles que
+deja la separación.
+
 Uso manual:
     python transcribe.py --input bass.wav
+    python transcribe.py --input piano.wav --instrument piano
 """
 
 from __future__ import annotations
@@ -64,6 +70,19 @@ HARMONIC_BONUS = 1.5
 # corto suele ser el transitorio del ataque, no una nota (y una sola nota grave
 # espuria bastaría para pedir un bajo de 5 cuerdas).
 MIN_LINE_NOTE_SECONDS = MIN_NOTE_MS / 1000
+
+# Piano: de A0 (MIDI 21) a C8 (MIDI 108), las 88 teclas. Es justo el rango del modelo, así que no
+# se le pasan límites de frecuencia (con un mínimo por debajo de A0, Basic Pitch calcula un índice
+# negativo y descarta todo el espectro).
+PIANO_LOWEST, PIANO_HIGHEST = 21, 108
+# Las notas de adorno y los pasajes rápidos duran menos que el mínimo por defecto.
+PIANO_MIN_NOTE_MS = 70.0
+# Un armónico fantasma empieza con su fundamental (a la vez, con este margen) y suena
+# mucho más débil que ella; una octava tocada de verdad tiene un ataque propio y fuerte.
+GHOST_ONSET_SECONDS = 0.05
+GHOST_RATIO = 0.6
+# Por debajo de esta amplitud casi todo es lo que se cuela de otras pistas en la separación.
+PIANO_MIN_AMPLITUDE = 0.2
 
 NOTE_NAMES = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 
@@ -117,6 +136,39 @@ def to_bass_line(events: Iterable[Note]) -> list[Note]:
     return [note for note in line if note.end - note.start >= MIN_LINE_NOTE_SECONDS]
 
 
+def clean_piano(events: Iterable[Note]) -> list[Note]:
+    """Conserva la polifonía del piano y quita lo que no se toca.
+
+    - Notas fuera del teclado o casi inaudibles.
+    - Armónicos fantasma: una nota a una octava, octava + quinta o dos octavas por
+      encima de otra que empieza a la vez y suena mucho más fuerte.
+    """
+    notes = sorted(
+        (n for n in events if PIANO_LOWEST <= n.pitch <= PIANO_HIGHEST and n.amplitude >= PIANO_MIN_AMPLITUDE),
+        key=lambda n: (n.start, n.pitch),
+    )
+    kept: list[Note] = []
+    for index, note in enumerate(notes):
+        ghost = False
+        # Solo hace falta mirar las que empiezan a la vez (están juntas por orden de inicio).
+        for other in _onset_neighbours(notes, index):
+            if note.pitch - other.pitch in HARMONIC_INTERVALS and note.amplitude < GHOST_RATIO * other.amplitude:
+                ghost = True
+                break
+        if not ghost:
+            kept.append(note)
+    return kept
+
+
+def _onset_neighbours(notes: list[Note], index: int) -> Iterable[Note]:
+    start = notes[index].start
+    for step in (-1, 1):
+        other = index + step
+        while 0 <= other < len(notes) and abs(notes[other].start - start) <= GHOST_ONSET_SECONDS:
+            yield notes[other]
+            other += step
+
+
 def to_message(note: Note) -> dict[str, Any]:
     return {
         "note": note_name(note.pitch),
@@ -126,43 +178,50 @@ def to_message(note: Note) -> dict[str, Any]:
     }
 
 
-def transcribe(input_path: Path) -> list[Note]:
+INSTRUMENTS = {"bass": "bajo", "piano": "piano"}
+
+
+def transcribe(input_path: Path, instrument: str = "bass") -> list[Note]:
     # Basic Pitch puede venir de la imagen o de las ruedas que instala la app (ver catalog.py).
     catalog.use_bundled_wheels()
     from basic_pitch import FilenameSuffix, build_icassp_2022_model_path
     from basic_pitch.inference import Model, predict
 
+    piano = instrument == "piano"
     # Siempre el modelo ONNX: el mismo resultado en Docker, Windows y macOS, sin TensorFlow.
     model = Model(build_icassp_2022_model_path(FilenameSuffix.onnx))
     _, _, events = predict(
         input_path,
         model,
-        minimum_frequency=MIN_FREQUENCY_HZ,
-        maximum_frequency=MAX_FREQUENCY_HZ,
-        minimum_note_length=MIN_NOTE_MS,
+        minimum_frequency=None if piano else MIN_FREQUENCY_HZ,
+        maximum_frequency=None if piano else MAX_FREQUENCY_HZ,
+        minimum_note_length=PIANO_MIN_NOTE_MS if piano else MIN_NOTE_MS,
     )
     # Cada evento: (inicio s, fin s, nota MIDI, amplitud, curvas de pitch bend).
-    return to_bass_line(Note(float(start), float(end), int(pitch), float(amplitude)) for start, end, pitch, amplitude, *_ in events)
+    notes = (Note(float(start), float(end), int(pitch), float(amplitude)) for start, end, pitch, amplitude, *_ in events)
+    return clean_piano(notes) if piano else to_bass_line(notes)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Transcripción de una pista de bajo a notas (modo práctica).")
-    parser.add_argument("--input", required=True, help="Pista de bajo (bass.wav de una extracción)")
+    parser = argparse.ArgumentParser(description="Transcripción de una pista de bajo o de piano a notas (modo práctica).")
+    parser.add_argument("--input", required=True, help="Pista que transcribir (bass.wav o piano.wav de una extracción)")
+    parser.add_argument("--instrument", choices=sorted(INSTRUMENTS), default="bass", help="Instrumento de la pista")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    name = INSTRUMENTS[args.instrument]
     try:
         input_path = Path(args.input)
         if not input_path.is_file():
-            raise FileNotFoundError(f"No existe la pista de bajo: {input_path}")
-        notes = transcribe(input_path)
+            raise FileNotFoundError(f"No existe la pista de {name}: {input_path}")
+        notes = transcribe(input_path, args.instrument)
         emit("done", model=MODEL, notes=[to_message(note) for note in notes])
         return 0
     except ModuleNotFoundError as error:
         if catalog.offline():
-            message = f"El motor no incluye la transcripción del bajo. {catalog.repair_hint()}"
+            message = f"El motor no incluye la transcripción del {name}. {catalog.repair_hint()}"
         else:
             message = (
                 f"Falta el paquete «{error.name}» en {sys.executable}. Instala la transcripción con: "

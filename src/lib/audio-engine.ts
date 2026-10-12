@@ -1,4 +1,4 @@
-import { STEM_ORDER, type MixState, type StemFile, type StemId } from "../types";
+import { STEM_ORDER, type LoopRange, type MixState, type StemFile, type StemId } from "../types";
 import { clampSemitones, clampTempo, MAX_SEMITONES, ORIGINAL_TEMPO } from "./pitch";
 import { createStretchNode, StretchLane, type StretchNode } from "./stretch";
 import { fetchStem } from "./tauri";
@@ -40,7 +40,14 @@ export interface EngineSnapshot {
   /** Tempo global en porcentaje de la velocidad original (100 = original). */
   tempo: number;
   stretch: StretchAvailability;
+  /** Región del bucle, aunque esté apagado (`null` si no se marcó ninguna). */
+  loop: LoopRange | null;
+  /** Si el bucle está encendido: al llegar a su final se vuelve a su inicio. */
+  looping: boolean;
 }
+
+/** Bucle más corto que se admite, en segundos. */
+export const MIN_LOOP_SECONDS = 0.5;
 
 /** Por dónde suena una pista: la fuente tal cual o Signalsmith Stretch. */
 type Route = "dry" | "wet";
@@ -65,11 +72,15 @@ interface Track {
   peaks: Float32Array;
 }
 
-/** Tramo del reloj: desde el instante `at` del contexto suena `position` de la canción, que avanza a `rate`. */
+/**
+ * Tramo del reloj: desde el instante `at` del contexto suena `position` de la canción,
+ * que avanza a `rate` y, si hay `loop`, vuelve a su inicio cada vez que llega a su final.
+ */
 interface Segment {
   at: number;
   position: number;
   rate: number;
+  loop: LoopRange | null;
 }
 
 const PEAK_BUCKETS = 1600;
@@ -83,6 +94,12 @@ const TICK_MS = 250;
 const SUSPEND_AFTER_MS = 250;
 /** Una latencia de salida mayor que esto es una marca de tiempo caducada, no el dispositivo. */
 const MAX_OUTPUT_LATENCY = 0.5;
+/**
+ * Bucle más largo que repiten los procesadores por sí solos: tienen que conservar todo
+ * su audio (≈ 21 MB por pista y minuto, además del búfer decodificado). Uno más largo con
+ * el tono o el tempo cambiados vuelve a su inicio con un salto (un corte de décimas de segundo).
+ */
+const MAX_SEAMLESS_LOOP_SECONDS = 120;
 
 /**
  * Reproductor multipista sincronizado. Cadena por pista:
@@ -100,6 +117,11 @@ const MAX_OUTPUT_LATENCY = 0.5;
  * y cada procesador arranca en la posición exacta, así que las pistas nunca se
  * desfasan. El reloj guarda los tramos de velocidad para saber qué posición de
  * la canción suena en cada momento.
+ *
+ * El bucle A–B no es un salto programado: las fuentes directas (`loop` de
+ * `AudioBufferSourceNode`) y los procesadores (`loopStart`/`loopEnd` de Signalsmith)
+ * vuelven solos a su inicio con precisión de muestra, también con el tempo cambiado,
+ * y el reloj hace la misma cuenta para saber dónde está el cabezal.
  */
 export class MultitrackEngine {
   private readonly ctx: AudioContext;
@@ -129,6 +151,12 @@ export class MultitrackEngine {
   private masterFader = UNITY_FADER;
   private masterSemitones = 0;
   private tempo = ORIGINAL_TEMPO;
+  private loop: LoopRange | null = null;
+  private looping = false;
+  /** Bucle que repiten ahora las fuentes y los procesadores (el del último tramo programado). */
+  private scheduledLoop: LoopRange | null = null;
+  /** Salto programado al inicio de un bucle largo que los procesadores no repiten solos. */
+  private loopJumpTimer: number | undefined;
   private suspendTimer: number | undefined;
   private snapshot: EngineSnapshot;
   private disposed = false;
@@ -251,6 +279,8 @@ export class MultitrackEngine {
       masterSemitones: this.masterSemitones,
       tempo: this.tempo,
       stretch: this.stretch,
+      loop: this.loop,
+      looping: this.looping,
     };
   }
 
@@ -321,10 +351,80 @@ export class MultitrackEngine {
     }
   }
 
+  // --- Bucle ----------------------------------------------------------------
+
+  /**
+   * Marca la región del bucle (ordenada y dentro de la canción) y, con `enable`, lo
+   * enciende. `null` quita la región y apaga el bucle. Una región más corta que
+   * `MIN_LOOP_SECONDS` se ignora.
+   */
+  setLoop(range: LoopRange | null, enable = true): void {
+    if (range) {
+      const start = Math.min(Math.max(Math.min(range.start, range.end), 0), this.duration);
+      const end = Math.min(Math.max(Math.max(range.start, range.end), 0), this.duration);
+      if (end - start < MIN_LOOP_SECONDS) return;
+      this.loop = { start, end };
+      if (enable) this.looping = true;
+    } else {
+      this.loop = null;
+      this.looping = false;
+    }
+    this.loopChanged();
+  }
+
+  /** Enciende o apaga el bucle (sin región no hay nada que encender). */
+  setLooping(on: boolean): void {
+    const next = on && this.loop !== null;
+    if (next === this.looping) return;
+    this.looping = next;
+    this.loopChanged();
+  }
+
+  /**
+   * Tras cambiar el bucle: si queda encendido con el cabezal fuera de él, salta a su
+   * inicio (se quiere oír lo que se acaba de marcar); si no, reprograma lo que suena.
+   * Un salto posterior fuera del bucle sí se respeta: desde antes de él se entra al
+   * llegar, y desde después se sigue hasta el final.
+   */
+  private loopChanged(): void {
+    const loop = this.looping ? this.loop : null;
+    const position = this.position;
+    if (loop && (position < loop.start || position >= loop.end)) {
+      this.seek(loop.start);
+      return;
+    }
+    this.update();
+    this.commit();
+  }
+
+  /** Bucle que repiten las fuentes y los procesadores a partir de `position`, si lo hay. */
+  private loopFor(position: number, processed: boolean): LoopRange | null {
+    const loop = this.looping ? this.loop : null;
+    if (!loop || position >= loop.end) return null;
+    if (processed && loop.end - loop.start > MAX_SEAMLESS_LOOP_SECONDS) return null;
+    return loop;
+  }
+
+  /** Para un bucle largo que los procesadores no repiten solos, programa el salto a su inicio. */
+  private armLoopJump(at: number, position: number, rate: number, scheduled: LoopRange | null): void {
+    window.clearTimeout(this.loopJumpTimer);
+    this.loopJumpTimer = undefined;
+    const loop = this.looping ? this.loop : null;
+    if (scheduled || !loop || position >= loop.end) return;
+    const delay = at + (loop.end - position) / rate - this.ctx.currentTime;
+    this.loopJumpTimer = window.setTimeout(() => {
+      this.loopJumpTimer = undefined;
+      if (this.playing && this.looping && this.loop) this.seek(this.loop.start);
+    }, Math.max(0, delay * 1000));
+  }
+
   /** Para al instante: silencia el transporte y anula todo lo programado. */
   private halt(): void {
     window.clearInterval(this.tickTimer);
     window.clearTimeout(this.updateTimer);
+    window.clearTimeout(this.loopJumpTimer);
+    this.loopJumpTimer = undefined;
+    this.scheduledLoop = null;
     this.updateTimer = undefined;
     const now = this.ctx.currentTime;
     const gain = this.transport.gain;
@@ -352,7 +452,7 @@ export class MultitrackEngine {
       this.commit();
       return;
     }
-    for (const track of this.tracks) if (track.route === "wet") void track.lane?.feed(position);
+    for (const track of this.tracks) if (track.route === "wet") void track.lane?.feed(position, this.scheduledLoop);
   };
 
   /**
@@ -376,8 +476,13 @@ export class MultitrackEngine {
   private apply(): void {
     const rate = this.rate();
     const routes = this.tracks.map((track): Route => (this.processed(track) ? "wet" : "dry"));
-    const key = `${rate}|${routes.join()}|${this.tracks.map((track) => this.effective(track)).join()}`;
     const starting = this.clock.length === 0;
+    const now = this.ctx.currentTime;
+    const at = now + START_LATENCY + this.latency;
+    const position = starting ? this.offset : this.positionAt(at);
+    const loop = this.loopFor(position, routes.includes("wet"));
+    const loopKey = loop ? `${loop.start}-${loop.end}` : "";
+    const key = `${rate}|${routes.join()}|${this.tracks.map((track) => this.effective(track)).join()}|${loopKey}`;
     if (!starting && key === this.appliedKey) return;
 
     // Los procesadores se crean la primera vez que hacen falta; cuando están, se vuelve aquí.
@@ -387,22 +492,28 @@ export class MultitrackEngine {
       return;
     }
 
-    const now = this.ctx.currentTime;
-    const at = now + START_LATENCY + this.latency;
-    const position = starting ? this.offset : this.positionAt(at);
-    if (starting || this.clock[this.clock.length - 1].rate !== rate) this.clock.push({ at, position, rate });
+    const loopChanged = !starting && !sameLoop(loop, this.scheduledLoop);
+    if (starting || loopChanged || this.clock[this.clock.length - 1].rate !== rate) {
+      this.clock.push({ at, position, rate, loop });
+    }
     while (this.clock.length > 2 && this.clock[1].at < now - 1) this.clock.shift();
 
-    // La ruta directa solo existe a velocidad original.
+    // La ruta directa solo existe a velocidad original. Si cambia el bucle, las fuentes
+    // se relevan en `at` en la misma posición: el audio sigue sin costura.
     const direct = routes.includes("dry");
-    if (direct && this.sources.length === 0) this.startSources(at, position);
-    else if (!direct && this.sources.length > 0) this.stopSources(at + CROSSFADE);
+    if (direct && (this.sources.length === 0 || loopChanged)) {
+      this.stopSources(at);
+      this.startSources(at, position, loop);
+    } else if (!direct && this.sources.length > 0) {
+      this.stopSources(at + CROSSFADE);
+    }
 
     this.tracks.forEach((track, index) => {
       const route = routes[index];
       if (route === "wet" && track.lane) {
-        if (track.route !== "wet") void track.lane.reset(position);
-        void track.lane.play(at, position, rate, this.effective(track));
+        // Un procesador que ya liberó el inicio del bucle tiene que volver a cargarlo.
+        if (track.route !== "wet" || (loop && !track.lane.holds(loop))) void track.lane.reset(position, loop);
+        void track.lane.play(at, position, rate, this.effective(track), loop);
       } else if (track.route === "wet") {
         void track.lane?.stop(at + CROSSFADE);
       }
@@ -420,12 +531,19 @@ export class MultitrackEngine {
     }
     this.appliedKey = key;
     this.pendingUntil = at + CROSSFADE;
+    this.scheduledLoop = loop;
+    this.armLoopJump(at, position, rate, loop);
   }
 
-  private startSources(at: number, position: number): void {
+  private startSources(at: number, position: number, loop: LoopRange | null): void {
     this.sources = this.tracks.map((track) => {
       const source = this.ctx.createBufferSource();
       source.buffer = track.buffer;
+      if (loop) {
+        source.loop = true;
+        source.loopStart = loop.start;
+        source.loopEnd = loop.end;
+      }
       source.connect(track.dryGain);
       source.start(at, position);
       return source;
@@ -466,7 +584,10 @@ export class MultitrackEngine {
     }
     // Hasta que llega el audio nuevo, el cabezal se queda en el punto de partida.
     if (!segment) return this.offset;
-    return Math.min(segment.position + (time - segment.at) * segment.rate, this.duration);
+    const position = segment.position + (time - segment.at) * segment.rate;
+    const { loop } = segment;
+    if (loop && position >= loop.end) return loop.start + ((position - loop.start) % (loop.end - loop.start));
+    return Math.min(position, this.duration);
   }
 
   /**
@@ -561,6 +682,7 @@ export class MultitrackEngine {
       masterFader: this.masterFader,
       masterSemitones: this.masterSemitones,
       tempo: this.tempo,
+      loop: this.loop ?? undefined,
       tracks: Object.fromEntries(
         this.tracks.map((track) => [
           track.id,
@@ -570,8 +692,16 @@ export class MultitrackEngine {
     };
   }
 
-  /** Restaura una mezcla guardada; los valores fuera de rango se corrigen. */
+  /**
+   * Restaura una mezcla guardada; los valores fuera de rango se corrigen. La región del
+   * bucle vuelve apagada (abrir una canción no debe repetir solo un trozo); sin mezcla
+   * (`resetMix`), el bucle no se toca: no es parte de la mezcla.
+   */
   applyMix(mix: MixState | undefined): void {
+    if (mix) {
+      this.loop = validLoop(mix.loop, this.duration);
+      this.looping = false;
+    }
     this.masterFader = finiteOr(mix?.masterFader, UNITY_FADER, clamp01);
     this.masterSemitones = finiteOr(mix?.masterSemitones, 0, clampSemitones);
     this.tempo = finiteOr(mix?.tempo, ORIGINAL_TEMPO, clampTempo);
@@ -668,6 +798,18 @@ export class MultitrackEngine {
 
 function clamp01(value: number): number {
   return Math.min(Math.max(value, 0), 1);
+}
+
+function sameLoop(a: LoopRange | null, b: LoopRange | null): boolean {
+  return a === b || (a !== null && b !== null && a.start === b.start && a.end === b.end);
+}
+
+/** Una región guardada, si es válida para esta canción. */
+function validLoop(loop: LoopRange | undefined, duration: number): LoopRange | null {
+  if (!loop || !Number.isFinite(loop.start) || !Number.isFinite(loop.end)) return null;
+  const start = Math.max(0, loop.start);
+  const end = Math.min(duration, loop.end);
+  return end - start >= MIN_LOOP_SECONDS ? { start, end } : null;
 }
 
 function finiteOr(value: number | undefined, fallback: number, clamp: (value: number) => number): number {

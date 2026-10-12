@@ -244,6 +244,41 @@ components:
     typography: "{typography.numeric-sm}"
     rounded: "{rounded.md}"
     height: "18px"
+  piano-roll:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.lg}"
+  piano-note-right:
+    backgroundColor: "{colors.stem-piano}"
+    textColor: "{colors.surface}"
+    typography: "{typography.numeric-xs}"
+    rounded: "4px"
+  piano-note-left:
+    backgroundColor: "color-mix(in oklch, var(--color-stem-piano) 28%, transparent)"
+    textColor: "{colors.ink}"
+    typography: "{typography.numeric-xs}"
+    rounded: "4px"
+  piano-key-white:
+    backgroundColor: "{colors.ink-4}"
+    textColor: "{colors.ink}"
+    typography: "{typography.numeric-xs}"
+  piano-key-black:
+    backgroundColor: "{colors.surface}"
+  piano-key-lit:
+    backgroundColor: "{colors.stem-piano}"
+    textColor: "{colors.surface}"
+    typography: "{typography.numeric-xs}"
+  loop-button-on:
+    backgroundColor: "color-mix(in oklch, var(--color-accent) 15%, transparent)"
+    textColor: "{colors.accent}"
+    rounded: "{rounded.lg}"
+    size: "32px"
+  loop-region:
+    backgroundColor: "color-mix(in oklch, var(--color-accent) 12%, transparent)"
+  loop-flag:
+    backgroundColor: "{colors.accent}"
+    textColor: "{colors.surface}"
+    typography: "{typography.numeric-xs}"
+    size: "14px"
   stepper:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.ink-2}"
@@ -279,11 +314,12 @@ escucha, se mezcla, se transpone y se exporta. La interfaz se comporta como un r
 negras y frías, todas del mismo tono, apiladas en tres escalones de luminosidad, con divisores de 1 px y filas densas
 de 56 px. El transporte es un dock fijo abajo que no cambia de sitio en ninguna vista. La biblioteca es una tabla y el
 mezclador es una tabla de pistas alineada con sus ondas; en el modo práctica, las ondas dejan sitio a un mástil de bajo
-y una tablatura dibujados en canvas con los mismos tokens. No hay pantalla de bienvenida ni rejilla de tarjetas.
+y una tablatura, o a una cascada de notas que cae sobre un teclado de piano, dibujados en canvas con los mismos tokens.
+No hay pantalla de bienvenida ni rejilla de tarjetas.
 
 El color está racionado. La interfaz es neutra, y un único turquesa marca la acción primaria, el foco, el progreso y
 lo que está sonando o alterado: el cabezal del dock, el ecualizador de la fila que suena, un tono transpuesto, un tempo
-cambiado. El resto
+cambiado, un bucle encendido. El resto
 del color pertenece al contenido. Son siete matices fijos, uno por instrumento, que se repiten idénticos en la franja
 de la biblioteca, los chips del dock, las pistas del mezclador, las casillas de exportación y el icono de la app. Un
 instrumento se reconoce por su color en cualquier pantalla.
@@ -299,7 +335,7 @@ nada baja de 11 px.
 - Siete colores de instrumento fijos, que son el único croma del contenido.
 - Listas como filas densas con columnas fijas; paneles grandes con 16 px de radio y borde de 1 px.
 - El fader horizontal redondeado como control firma; cifras en mono tabular.
-- Lo que se dibuja en canvas (ondas, mástil, tablatura) lee los mismos tokens que el resto: no hay una paleta aparte.
+- Lo que se dibuja en canvas (ondas, mástil, tablatura, cascada y teclado) lee los mismos tokens que el resto: no hay una paleta aparte.
 - Acciones de fila ocultas hasta el hover, pero siempre alcanzables con el teclado.
 - Movimiento corto y funcional, anulado por completo con `prefers-reduced-motion`.
 
@@ -314,9 +350,10 @@ variable local `--stem` con `stemStyle(id)` (exportada desde `NewExtraction.tsx`
 - **Turquesa de señal** (`accent`): botón primario («Nueva extracción», «Exportar N pistas», «Instalar y reiniciar»),
   anillo de foco global (2 px, desplazado 2 px), cabezal del dock, barras de progreso de separación, exportación y
   descarga, ecualizador de la fila que suena, punto del motor con GPU, semitonos distintos de 0 (también «tablatura
-  transpuesta» en el modo práctica), enlaces de texto («elige un archivo», «Todas»), la mitad «Extract» del
-  logotipo, `accent-color` de los controles nativos y selección de texto (al 35 %). El texto sobre el acento es
-  siempre `surface`.
+  transpuesta» en el modo práctica), el bucle encendido (botón al 15 % con el icono en `accent`, región sobre la onda
+  del dock al 12 %, sus extremos y banderas «A»/«B», y la línea «A» donde vuelve a empezar en la tablatura y en la
+  cascada), enlaces de texto («elige un archivo», «Todas»), la mitad «Extract» del logotipo, `accent-color` de los
+  controles nativos y selección de texto (al 35 %). El texto sobre el acento es siempre `surface`.
 
 ### Instrumentos (paleta categórica)
 Siete matices repartidos por el círculo cromático con luminosidad y croma parejos para que ninguno domine. El orden es
@@ -346,6 +383,14 @@ En el modo práctica, el violeta del bajo tiene además estas formas, siempre de
 - **Barra de 3 px tras el número de traste:** la duración en la tablatura (85 % si suena, 45 % por tocar, 22 % tocada).
 - **Píldora sólida con el número en `surface`:** el número de la tablatura que suena ahora.
 
+Y el celeste del piano, en su modo práctica:
+- **Barra llena con el nombre de la nota en `surface`:** una nota de la mano derecha que cae hacia su tecla.
+- **Barra hueca (relleno al 28 % y borde de 1,5 px) con el nombre en `ink`:** una nota de la mano izquierda. La mano
+  se distingue por la forma, no por un segundo color.
+- **Tecla llena con su nombre en `surface`:** la tecla que suena; si es de la mano izquierda, con un borde interior
+  de 2 px en `surface`.
+- **Barra de 3 px que crece y se apaga sobre la tecla:** el ataque de una nota.
+
 ### Estado
 - **Rojo de alarma** (`danger`): errores (texto, borde al 30–40 %, fondo al 5 %), botón «Mover a la papelera», M
   (silencio) activo, vúmetro que satura, motor no disponible, acción de eliminar al pasar el ratón.
@@ -355,22 +400,25 @@ En el modo práctica, el violeta del bajo tiene además estas formas, siempre de
 ### Neutral
 La neutra es una sola rampa de ocho escalones del mismo tono, de oscuro a claro, y cada escalón tiene su función.
 - **Grafito** (`surface`): fondo de la ventana y de la barra superior. También los «pozos» hundidos: fondo de
-  segmentados, campo de renombrar, bloques de error, fondo del vúmetro, grupo de semitonos y diapasón del mástil. Es
-  el texto sobre `accent`, `danger`, `warning` y los colores de instrumento.
+  segmentados, campo de renombrar, bloques de error, fondo del vúmetro, grupo de semitonos, diapasón del mástil,
+  cascada del piano y teclas negras. Es el texto sobre `accent`, `danger`, `warning` y los colores de instrumento.
 - **Panel** (`panel`): contenedores (tabla de biblioteca, mezclador, panel de nueva extracción, dock, paneles laterales,
   avisos flotantes, aviso de actualización) y fondo del campo de búsqueda.
 - **Relieve** (`raised`): hover (al 35–60 %), fila actual (al 70 %), botón secundario, opción elegida de un segmentado,
   chips del dock, M/S y «Practicar» en reposo, barras del esqueleto, marcas de posición del mástil.
 - **Divisor** (`line`): bordes y divisores de 1 px, carril vacío del fader, pulgar de la barra de desplazamiento, hover
-  de lo que ya está en `raised`, trastes del mástil (2 px) y líneas de la tablatura.
+  de lo que ya está en `raised`, trastes del mástil (2 px), líneas de la tablatura y líneas de octava de la cascada (en
+  cada Do; al 45 % en cada Fa).
 - **Tinta** (`ink`): texto principal y títulos, botón de reproducir, pulgar del fader, cabezal del mezclador, línea
-  «ahora» de la tablatura, números de traste por tocar y nombre de la cuerda que suena.
+  «ahora» de la tablatura y de la cascada, números de traste por tocar, nombre de la cuerda que suena y nombre de
+  cada Do («C4») sobre las teclas blancas.
 - **Tinta 2** (`ink-2`): texto secundario, valores, botones fantasma, volumen de escucha del dock.
 - **Tinta 3** (`ink-3`): metadatos, cabeceras de columna, placeholders, iconos en reposo, nombres de cuerda, regla de
   trastes y números de la tablatura ya tocados. Es la última tinta apta para texto: según el propio `index.css`,
   `ink-2` e `ink-3` superan 4.5:1 sobre `surface`, `panel` y `raised`.
 - **Tinta 4** (`ink-4`): solo para lo decorativo o deshabilitado: marca de 0 dB, ranura de instrumento no separado,
-  pista del spinner, onda de fondo del dock, cuerdas y cejuela del mástil, y texto deshabilitado.
+  pista del spinner, onda de fondo del dock, cuerdas y cejuela del mástil, teclas blancas del piano en reposo, notas de
+  la otra mano cuando se practica una sola (contorno de 1 px) y texto deshabilitado.
 
 ### Named Rules
 **Regla de la señal única.** El turquesa significa «acción, foco, progreso o algo que suena o está alterado». No se usa
@@ -447,9 +495,10 @@ tempo, BPM) va en `font-mono`. Las duraciones y porcentajes de la tabla van en s
 - **Mezclador:** un único contenedor con desplazamiento, con una columna de controles de 312 px y otra de ondas
   flexible. Cada pista mide al menos 52 px y todas se reparten el alto disponible. Controles y ondas se desplazan juntos.
 - **Modo práctica:** ocupa el mismo panel del mezclador, que deja de desplazarse. Arriba, una franja de 60 px con tres
-  columnas: la de 312 px con los controles de la pista de bajo (la misma `TrackControls`, alineada con la columna del
-  mezclador), el resumen (13 px medio y una línea de 12 px `ink-3` que se recorta con elipsis) y «Todas las pistas»
-  como botón fantasma. Debajo, el canvas a todo lo ancho, con 20 px de margen lateral y al menos 256 px de alto:
+  columnas: la de 312 px con los controles de la pista (bajo o piano: la misma `TrackControls`, alineada con la
+  columna del mezclador), el resumen (13 px medio y una línea de 12 px `ink-3` que se recorta con elipsis) y, a la
+  derecha, las opciones del modo (el segmentado de manos del piano) y «Todas las pistas» como botón fantasma. Debajo,
+  el canvas a todo lo ancho, con 20 px de margen lateral y al menos 256 px de alto. En el bajo:
   - el mástil se lleva el 60 % del alto disponible (entre 112 y 236 px), siempre que la tablatura conserve 20 px
     entre líneas;
   - una columna de 26 px para los nombres de cuerda y otra de 34 px para las notas al aire, antes de la cejuela;
@@ -457,6 +506,15 @@ tempo, BPM) va en `font-mono`. Las duraciones y porcentajes de la tabla van en s
     trastes visibles según la canción;
   - la tablatura, con líneas separadas entre 20 y 36 px y centrada en su espacio; la línea «ahora» al 16 % del ancho
     y unos 5 s de canción por delante (la escala va de 0,14 a 0,24 px por ms según el ancho).
+
+  En el piano:
+  - el teclado abajo, con el 24 % del alto (entre 64 y 128 px) y 14 px de margen inferior; enseña octavas completas,
+    de la Do bajo la nota más grave a la Si sobre la más aguda, tres como mínimo y nunca fuera de las 88 teclas;
+  - teclas blancas de hasta 44 px (con menos teclas, el teclado se centra); negras del 58 % de ancho y el 62 % de alto,
+    desplazadas como en un piano real;
+  - encima, la cascada hasta 10 px del borde, con unos 3,2 s de canción (de 0,07 a 0,22 px por ms según el alto) y un
+    fundido de 28 px arriba; cada columna es un poco más estrecha que su tecla;
+  - el segmentado de manos («Ambas», «Izquierda», «Derecha»; «Izq.» y «Der.» cuando la franja mide menos de 1000 px).
 - **Dock:** una franja de onda de 28 px para desplazarse por la canción y una fila de controles de 56 px (84 px en
   total). Sin nada cargado mide 48 px y muestra una frase guía. Tono y tempo van apilados en un bloque de dos filas de
   24 px (50 px con el hueco de 2 px) dentro de la fila de 56 px. El título se estira pero nunca baja de 7rem, y las
@@ -466,18 +524,20 @@ tempo, BPM) va en `font-mono`. Las duraciones y porcentajes de la tabla van en s
   - desde 1100 px, «Tono», «Tempo» y «Mezclador/Biblioteca»;
   - desde 1160 px, «Exportar»;
   - desde 1240 px, el fader de volumen pasa de 96 a 144 px;
+  - desde 1320 px, la región del bucle en mono 11 px junto a su botón;
   - desde 1480 px, los nombres dentro de los chips de instrumento.
 
   Con la ventana mínima todo queda en iconos, sin perder ninguna función.
 - **Escalera de alturas de control:** 24 px (M/S, «Practicar», ± de los steppers pequeños: semitonos de pista, tono y
-  tempo del dock, cerrar aviso), 28 px (chips, píldora del motor, ± del stepper normal, cerrar panel), 32 px (botones,
+  tempo del dock, cerrar aviso, quitar el bucle), 28 px (chips, píldora del motor, ± del stepper normal, cerrar panel), 32 px (botones,
   búsqueda, botones de icono, segmentados), 36 px (botón final de
   exportación, filas de la lista de pistas al exportar, aviso de actualización), 40 px (reproducir).
 
 ### Named Rules
 **Regla del dock fijo.** El transporte vive en el dock en todas las vistas: la vista cambia por encima y el dock no.
 Ninguna vista duplica los controles de reproducción, tampoco el modo práctica (en él solo se salta con un clic en la
-tablatura, igual que con un clic en las ondas).
+tablatura o en la cascada, igual que con un clic en las ondas). El bucle A–B también es transporte: se enciende y se
+edita en el dock, y las vistas solo lo muestran.
 
 **Regla de las mismas columnas.** Todo lo que entra en la tabla de la biblioteca usa `ROW_GRID`. Una fila nueva no
 inventa columnas.
@@ -550,7 +610,7 @@ segmentado 12 → botón 8 → chip 6.
   y `title`.
 - **Acción de pista:** botón con texto de 24 px, 6 px de radio, `raised` con texto `ink-2` en 11 px seminegrita; en
   hover, `line` e `ink`. Pertenece a la familia de M/S, pero es una acción, no un conmutador. Lo lleva solo la pista que
-  la tiene, entre el nombre y los semitonos: «Practicar» en el bajo. Con texto, no con icono: a 16 px un icono de
+  la tiene, entre el nombre y los semitonos: «Practicar» en el bajo y en el piano. Con texto, no con icono: a 16 px un icono de
   mástil se lee como una almohadilla.
 - **Peligro:** `danger` con texto `surface` en 12 px seminegrita, solo en la confirmación de eliminar dentro de la fila.
 - **Transporte:** reproducir es un círculo de 40 px en `ink` con icono `surface` (hover a escala 1.05, pulsado a 0.95).
@@ -673,7 +733,7 @@ segmentado 12 → botón 8 → chip 6.
 - **Cabezales:** el del mezclador es una línea de 1 px en `ink` con contorno negro. El del dock es una línea de 1 px
   en `accent` sobre una onda neutra (`ink-4`, con lo reproducido en `ink-2`).
 
-### Modo práctica (mástil y tablatura)
+### Modo práctica de bajo (mástil y tablatura)
 Un instrumento de lectura, no un decorado: todo lo que se mueve dice qué tocar, dónde y cuándo.
 - **Franja superior** (`practice-strip`): los controles de la pista de bajo tal cual están en el mezclador (con su
   vúmetro vivo), «Bajo de N cuerdas» en 13 px medio seguido de la afinación en mono 11 px `ink-3`, y debajo
@@ -697,6 +757,46 @@ Un instrumento de lectura, no un decorado: todo lo que se mueve dice qué tocar,
   (texto centrado).
 - **Accesibilidad:** el canvas es `role="img"` con una descripción del mástil, la afinación y el clic en la
   tablatura; el transporte sigue en el dock y en el teclado.
+- **Con el bucle encendido:** lo que viene tras su final es otra vez su inicio. La tablatura (y el anticipo del
+  mástil) se parte en tramos y una línea `accent` de 1 px con bandera «A» de 14 px marca dónde vuelve a empezar.
+
+### Modo práctica de piano (cascada y teclado)
+El mismo instrumento de lectura para el piano: las notas caen hacia su tecla y la tecla se ilumina al sonar.
+- **Franja superior:** los controles de la pista de piano, «Piano» en 13 px medio con el registro que se toca en mono
+  11 px `ink-3` («C2–E5»), y debajo «N notas · transcripción automática · manos estimadas», con «transpuesto ±N» en
+  `accent` y «N notas cambiadas de octava» si alguna no cabe. A la derecha, el segmentado de manos.
+- **Cascada** (`piano-roll`): un pozo `surface` con 8 px de radio arriba que llega hasta el teclado; las columnas de
+  las teclas negras, un escalón más hundidas (negro al 18 %); una línea `line` en cada Do y al 45 % en cada Fa. Cada
+  nota es una barra de hasta 4 px de radio sobre la columna de su tecla, tan larga como dura: llena (`piano-note-right`)
+  para la mano derecha y hueca (`piano-note-left`) para la izquierda, con su nombre sin octava en mono 11 px seminegrita
+  al pie si caben 15×18 px; mientras suena, el nombre se queda justo encima del teclado.
+- **Teclado:** blancas `ink-4` con 4 px de radio abajo y 1 px de separación, negras `surface` encima; el nombre de cada
+  Do («C4») en mono 11 px `ink`. La tecla que suena se llena de `stem-piano` con su nombre en `surface`
+  (`piano-key-lit`); la línea «ahora» es el borde superior del teclado, como la de la tablatura.
+- **Manos:** la transcripción no sabe de manos: se estiman por altura y por lo que suena alrededor (si cabe en una
+  décima, una sola mano; si no, se parten por el mayor hueco cerca del Do central). «Izquierda» o «Derecha» deja la
+  otra mano como contorno `ink-4` de 1 px, por debajo, sin nombre ni tecla iluminada.
+- **Movimiento:** al empezar cada nota, una barra de 3 px sobre la tecla que crece 6 px y se apaga en 180 ms. En pausa,
+  al saltar o con `prefers-reduced-motion`, no hay animación.
+- **Bucle:** como en la tablatura, la línea «A» cruza la cascada con la bandera en el margen izquierdo, y por encima de
+  ella caen las notas del inicio del bucle.
+- **Estados y accesibilidad:** los mismos que en el bajo («Transcribiendo el piano…»); el canvas describe el registro
+  del teclado y la mano que se practica, y un clic en la cascada salta a ese momento.
+
+### Bucle A–B (dock)
+Repetir un pasaje es transporte, así que vive en el dock y sirve en todas las vistas.
+- **Botón** (32 px, icono de bucle de 16 px) junto a detener. Apagado: `ink-3` con hover `raised`. Encendido
+  (`loop-button-on`): fondo `accent` al 15 % e icono `accent`. Sin región, el primer clic marca cuatro compases desde el
+  cabezal (al tempo estimado; 8 s si no lo hay) y la enciende. Con región aparecen, a su lado, la región en mono 11 px
+  tabular («1:02,3–1:10,8»; en `accent` si está encendido) desde 1320 px y el botón de quitarla (24 px, aspa de 12 px).
+- **Región sobre la onda** (`loop-region`): `accent` al 12 % (o `ink-3` al 10 % si está apagado), con un extremo de
+  1 px y una bandera «A»/«B» de 14 px (`loop-flag`, mono 11 px seminegrita en `surface`) que apunta hacia dentro.
+  Los extremos son deslizadores de 16 px de ancho: se arrastran y, con el foco, las flechas los mueven 0,1 s (1 s con
+  Mayús). Mayús + arrastrar sobre la onda marca una región nueva. Lo que se arrastra se dibuja al momento y el motor la
+  recibe al soltar.
+- **Teclado:** L enciende o apaga; A y B ponen el inicio o el final en el cabezal (B enciende el bucle y vuelve a A).
+- **Sonido:** sin costura, también con el tempo o el tono cambiados. Al encenderlo o moverlo con el cabezal fuera,
+  salta a su inicio; un salto posterior fuera del bucle se respeta. La región se guarda con la mezcla y vuelve apagada.
 
 ### Instalación del motor (`EngineSetup`)
 Ocupa el sitio de las opciones en «Nueva extracción» (la zona de soltar dice «Primero, el motor de separación») y el de

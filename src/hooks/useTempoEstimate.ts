@@ -10,6 +10,13 @@ import type { LibraryItem } from "../types";
  * La clave incluye la fecha de creación, como las notas del modo práctica.
  */
 const estimates = new Map<string, Promise<TempoEstimate | null>>();
+/** Las ya calculadas, para leerlas sin esperar (atajos de teclado). */
+const settled = new Map<string, TempoEstimate | null>();
+
+/** BPM estimados de una extracción, si ya se calcularon (si no, `null`). */
+export function knownBpm(item: LibraryItem): number | null {
+  return settled.get(`${item.id}\n${item.createdAt}`)?.bpm ?? null;
+}
 
 /** Tempo estimado de la extracción cargada; `null` mientras se calcula o si no tiene un pulso claro. */
 export function useTempoEstimate(engine: MultitrackEngine, item: LibraryItem): TempoEstimate | null {
@@ -32,10 +39,15 @@ export function useTempoEstimate(engine: MultitrackEngine, item: LibraryItem): T
 function requestEstimate(key: string, engine: MultitrackEngine): Promise<TempoEstimate | null> {
   let request = estimates.get(key);
   if (!request) {
-    request = estimate([...engine.buffers.values()]).catch((error: unknown) => {
-      console.warn("No se pudo estimar el tempo:", error);
-      return null;
-    });
+    request = estimate([...engine.buffers.values()])
+      .catch((error: unknown) => {
+        console.warn("No se pudo estimar el tempo:", error);
+        return null;
+      })
+      .then((result) => {
+        settled.set(key, result);
+        return result;
+      });
     estimates.set(key, request);
   }
   return request;

@@ -91,8 +91,9 @@ volver a abrir la canción.
 Ideas de uso:
 
 - **Practicar**: silencia tu instrumento, baja el tono de la canción a tu tesitura, y toca encima. Para
-  sacar un pasaje difícil, frena el tempo al 70 % y súbelo poco a poco. Si tocas el bajo, usa el
-  [modo práctica](#modo-práctica-bajo).
+  sacar un pasaje difícil, repítelo en [bucle](#bucle-a-b), frena el tempo al 70 % y súbelo poco a poco.
+  Si tocas el bajo o el piano, usa su modo práctica ([bajo](#modo-práctica-bajo),
+  [piano](#modo-práctica-piano)).
 - **Karaoke**: silencia las voces y exporta la mezcla: se llamará «… - sin voces».
 - **Producción**: aísla la batería con *S*, o transpón solo el bajo una octava (+12) para un remix.
 
@@ -123,6 +124,48 @@ siguientes veces se abre al instante.
 - **Es una transcripción automática**: puede fallar en notas muy rápidas, muy graves o con restos de
   otros instrumentos en la pista. Sirve de guía para practicar, no como partitura exacta.
 - Mientras el modo práctica está abierto, solo se mide el vúmetro del bajo.
+- Con el [bucle](#bucle-a-b) encendido, la tablatura muestra tras su final otra vez su inicio, marcado
+  con una línea «A».
+
+## Modo práctica (piano)
+
+Si la canción se separó con piano, **Practicar** en la pista de piano dedica el mezclador al piano:
+
+- **Arriba**, los controles de la pista de piano, un resumen (de qué nota a qué nota se toca, cuántas
+  notas hay, si está transpuesto) y las **manos**: **Ambas**, **Izquierda** o **Derecha**.
+- **Las notas caen hacia el teclado**: cada barra está sobre su tecla y es tan larga como dura la nota.
+  Cuando llega a la línea blanca («ahora»), su tecla se ilumina con el nombre de la nota. **Haz clic en
+  la cascada** para saltar a ese momento.
+- **Barra llena: mano derecha; barra hueca: mano izquierda.** Con **Izquierda** o **Derecha** practicas
+  una sola mano: la otra se ve en gris y no ilumina teclas.
+- El teclado enseña las octavas que usa la canción (tres como mínimo), con el nombre de cada Do («C4»
+  es el Do central).
+
+Como en el bajo, la primera vez el motor transcribe la pista en tu equipo (unos segundos) y la guarda
+junto a ella (`piano.notes.json`); sigue la transposición y el tempo que suenan.
+
+- **Las manos son una estimación**: la transcripción no sabe con qué mano se toca cada nota. La app las
+  reparte por altura y por lo que suena alrededor: si todo cabe en una mano, va a una sola; si no, las
+  parte por el mayor hueco, cerca del Do central.
+- **Es una transcripción automática**: puede saltarse notas en acordes muy densos o con mucho pedal, o
+  añadir alguna que se cuela de otros instrumentos. Sirve de guía, no como partitura exacta.
+
+## Bucle A–B
+
+Para repetir un pasaje, en el dock, junto a detener:
+
+- **Botón de bucle** (o **L**): si no hay bucle, repite **cuatro compases desde donde estás** (al tempo
+  estimado; 8 s si no lo hay). Con un bucle marcado, lo enciende o lo apaga. La **×** de al lado lo quita.
+- **A** y **B** marcan el inicio y el final del bucle donde está el cabezal: pulsa **A** al empezar el
+  pasaje y **B** al terminarlo, y se repite desde A.
+- **Sobre la onda del dock** se ve la región, con las banderas **A** y **B**: arrástralas para ajustarla
+  (o enfócalas con Tab y usa ← → para moverlas 0,1 s; con Mayús, 1 s). **Mayús + arrastrar** sobre la
+  onda marca una región nueva.
+- El bucle **no corta**: vuelve al inicio sin silencio, también con el tempo o el tono cambiados. Puedes
+  frenar el tempo con el bucle sonando.
+- Si saltas fuera del bucle, la app te deja: desde antes de A entra al llegar; desde después de B sigue
+  hasta el final.
+- La región se guarda con la mezcla de la canción y vuelve, apagada, al abrirla otra vez.
 
 ## Exportar
 
@@ -146,7 +189,7 @@ Desde el dock, el mezclador o cualquier fila de la biblioteca:
 - **Biblioteca**: abrir la carpeta, cambiarla o volver a la predeterminada. Al cambiar de carpeta, las
   extracciones anteriores se quedan donde estaban (puedes moverlas a la nueva).
 - **Motor de separación**: acelerador (CUDA, Metal o CPU), calidades e instrumentos disponibles, si
-  puede transcribir el bajo para el modo práctica, versión, avisos y dónde está instalado. **Reinstalar
+  puede transcribir el bajo y el piano para el modo práctica, versión, avisos y dónde está instalado. **Reinstalar
   el motor** lo repara o, si cambiaste de GPU, instala la variante que le toca. Si el motor aún no está
   instalado, aquí aparece también el botón para instalarlo (ver
   [INSTALACION.md](INSTALACION.md#primer-arranque-el-motor)).
@@ -161,6 +204,9 @@ Desde el dock, el mezclador o cualquier fila de la biblioteca:
 | ← → | Retroceder o avanzar 5 s |
 | Inicio | Volver al principio |
 | M | Abrir o cerrar el mezclador |
+| L | Encender o apagar el bucle (sin bucle, marca cuatro compases desde el cabezal) |
+| A / B | Inicio / final del bucle en el cabezal (B lo enciende) |
+| Mayús + arrastrar en la onda del dock | Marcar un bucle |
 | Ctrl K | Buscar en la biblioteca |
 | Ctrl N | Nueva extracción |
 | ↑ ↓ | Moverse por las filas de la biblioteca (Intro reproduce) |

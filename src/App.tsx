@@ -17,9 +17,11 @@ import { useFileDrop } from "./hooks/useFileDrop";
 import { useLibrary } from "./hooks/useLibrary";
 import { usePlayer } from "./hooks/usePlayer";
 import { usePreferences } from "./hooks/usePreferences";
+import { knownBpm } from "./hooks/useTempoEstimate";
 import { useSeparation } from "./hooks/useSeparation";
 import { useUpdater } from "./hooks/useUpdater";
 import { isGpu } from "./lib/format";
+import { setLoopEdge, toggleLoop } from "./lib/loop";
 import { appInfo, AUDIO_EXTENSIONS, AUDIO_FORMATS_LABEL, fileName, libraryOpen, toAppError } from "./lib/tauri";
 import type { AppInfo, EngineStatus, LibraryItem, Quality } from "./types";
 
@@ -220,11 +222,15 @@ export default function App() {
         engineReady.seek(engineReady.position + 5);
       } else if (event.key === "m" || event.key === "M") {
         setView((current) => (current === "mixer" ? "library" : "mixer"));
+      } else if (event.key === "l" || event.key === "L") {
+        toggleLoop(engineReady, currentItem && knownBpm(currentItem));
+      } else if (event.key === "a" || event.key === "A" || event.key === "b" || event.key === "B") {
+        setLoopEdge(engineReady, event.key.toLowerCase() === "a" ? "start" : "end", currentItem && knownBpm(currentItem));
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [engineReady, newOpen, items.length]);
+  }, [engineReady, currentItem, newOpen, items.length]);
 
   const exportItem = panel?.kind === "export" ? items.find((item) => item.id === panel.itemId) : undefined;
   const firstRun = library.listing !== null && items.length === 0;

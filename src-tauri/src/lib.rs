@@ -53,7 +53,7 @@ pub fn run() {
             commands::engine_setup_cancel,
             commands::separate,
             commands::cancel_separation,
-            commands::generate_bass_tab,
+            commands::transcribe_stem,
             commands::library_list,
             commands::library_rename,
             commands::library_delete,

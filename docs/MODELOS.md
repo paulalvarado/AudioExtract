@@ -66,7 +66,7 @@ La app muestra estimaciones por minuto de canción a partir de estas medidas; en
 - Los pesos de audio-separator y UVR se publican para uso con sus herramientas; revisa sus términos
   antes de un uso comercial.
 
-## Transcripción del bajo (modo práctica)
+## Transcripción del bajo y del piano (modo práctica)
 
 [Basic Pitch](https://github.com/spotify/basic-pitch) de Spotify (Apache 2.0) convierte la pista de
 bajo en notas. Se usa su versión **ONNX**, que viene dentro del paquete `basic-pitch` (no descarga
@@ -83,6 +83,23 @@ separación.
   las notas de menos de 80 ms. En la canción de prueba, 753 notas en bruto quedaron en 591.
 - Límites: fragmentos de ataque, notas fantasma y octavas equivocadas siguen siendo posibles, sobre
   todo con una pista de bajo poco limpia. La separación en calidad máxima da un bajo más limpio.
+
+### Piano
+
+El mismo modelo transcribe la pista de piano (`transcribe.py --instrument piano`), conservando la
+polifonía:
+
+- Sin límites de frecuencia: el rango del modelo (MIDI 21–108) ya son las 88 teclas. Ojo: con un
+  `minimum_frequency` por debajo de A0, Basic Pitch 0.4.0 calcula un índice negativo y descarta todo el
+  espectro (devuelve cero notas).
+- Notas desde 70 ms (adornos y pasajes rápidos) y con amplitud de al menos 0,2.
+- Se quitan los **armónicos fantasma**: una nota a una octava, octava + quinta o dos octavas por encima
+  de otra que empieza a la vez (±50 ms) y suena con menos del 60 % de su amplitud. Una octava tocada de
+  verdad tiene su propio ataque fuerte y se queda.
+- Medido con dos pistas de piano reales: «September» (3 min 33 s) da 1 859 notas en bruto y 1 792 tras
+  la limpieza (≈8 por segundo), en La mayor como la canción.
+- Límites: en acordes muy densos o con mucho pedal se pierden notas, y lo que se cuela de otros
+  instrumentos en la pista puede aparecer como notas sueltas.
 
 ## Añadir o quitar modelos
 

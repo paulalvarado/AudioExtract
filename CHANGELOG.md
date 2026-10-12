@@ -8,6 +8,26 @@ versión requiere reconstruir el motor.
 
 ## [Sin publicar]
 
+## [1.2.0] — 2026-10-11
+
+No hace falta reinstalar ni poner al día el motor: la transcripción del piano usa el mismo modelo que la
+del bajo y llega con la app.
+
+### Añadido
+
+- **Modo práctica de piano**: «Practicar» en la pista de piano transcribe el piano en tu equipo y muestra
+  sus notas cayendo sobre un teclado, sincronizadas con la canción. Cada nota es una barra sobre su
+  tecla, tan larga como dura, y la tecla se ilumina con su nombre al sonar. Las manos se estiman (barra
+  llena: derecha; hueca: izquierda) y se puede practicar una sola: la otra se ve en gris. Sigue el tempo
+  y la transposición, y un clic en la cascada salta a ese momento. La transcripción se guarda junto a la
+  pista (`piano.notes.json`).
+- **Bucle A–B**, en el dock y en todas las vistas: el botón de bucle (o L) repite cuatro compases desde
+  donde estás; A y B marcan el inicio y el final en el cabezal; la región se ve sobre la onda del dock y
+  se ajusta arrastrando sus banderas (o con las flechas), y Mayús + arrastrar marca otra. Vuelve al inicio
+  sin cortes, también con el tempo o el tono cambiados, y se guarda con la mezcla de cada canción.
+- En los modos práctica, con el bucle encendido, la tablatura y la cascada muestran tras su final otra
+  vez su inicio, marcado con una línea «A».
+
 ## [1.1.0] — 2026-10-07
 
 **Ya no hace falta Docker.** Al abrir esta versión, pulsa «Instalar el motor» una vez y la app instala
@@ -84,6 +104,7 @@ Primera versión pública, como software libre bajo la licencia GPL 3.0 o poster
 - Modo demo en el navegador (`npm run dev:web`), CI y publicación con GitHub Actions, y documentación en
   `docs/`.
 
-[Sin publicar]: https://github.com/paulalvarado/AudioExtract/compare/v1.1.0...HEAD
+[Sin publicar]: https://github.com/paulalvarado/AudioExtract/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/paulalvarado/AudioExtract/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/paulalvarado/AudioExtract/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/paulalvarado/AudioExtract/releases/tag/v1.0.0

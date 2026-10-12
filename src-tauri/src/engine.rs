@@ -9,8 +9,8 @@
 //! otro hilo (Torch es verboso y, si nadie lo lee, el pipe se llena y el hijo se
 //! bloquea); se guardan sus últimas líneas para explicar un fallo.
 //!
-//! `python/transcribe.py` (modo práctica) sigue el mismo protocolo: recibe solo el
-//! `bass.wav` de una extracción y responde con un `done` que lleva sus notas.
+//! `python/transcribe.py` (modo práctica) sigue el mismo protocolo: recibe solo la
+//! pista de bajo o de piano de una extracción y responde con un `done` que lleva sus notas.
 
 use std::collections::{BTreeMap, VecDeque};
 use std::env;
@@ -37,10 +37,38 @@ pub const OPTIONAL_STEMS: [&str; 3] = ["guitar", "piano", "wind"];
 
 const DEFAULT_IMAGE: &str = "audioextract-engine:latest";
 const SEPARATE_SCRIPT: &str = "separate.py";
-/// Script de transcripción del bajo (modo práctica); va junto a `separate.py`.
+/// Script de transcripción del bajo y del piano (modo práctica); va junto a `separate.py`.
 const TRANSCRIBE_SCRIPT: &str = "transcribe.py";
-/// Dónde ve el contenedor de transcripción el `bass.wav` (montado en solo lectura).
-const TRANSCRIBE_INPUT: &str = "/input/bass.wav";
+/// Dónde ve el contenedor de transcripción la pista (montada en solo lectura).
+const TRANSCRIBE_INPUT_DIR: &str = "/input";
+
+/// Pistas que el modo práctica sabe transcribir a notas.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Transcribed {
+    /// Línea monofónica, para el mástil y la tablatura.
+    Bass,
+    /// Polifónico, para la cascada de notas y el teclado.
+    Piano,
+}
+
+impl Transcribed {
+    /// Nombre de la pista en la biblioteca (`bass.wav`, `piano.wav`).
+    pub fn stem(self) -> &'static str {
+        match self {
+            Self::Bass => "bass",
+            Self::Piano => "piano",
+        }
+    }
+
+    /// Nombre del instrumento en los mensajes («la pista de bajo»).
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Bass => "bajo",
+            Self::Piano => "piano",
+        }
+    }
+}
 /// Dónde ve el contenedor los scripts que instala la app (en solo lectura).
 const SCRIPTS_MOUNT: &str = "/opt/audioextract/python";
 /// Ruedas de Python puro que la app instala junto a sus scripts (ver `catalog.use_bundled_wheels`).
@@ -135,7 +163,7 @@ pub enum SeparationEvent {
     Log { message: String },
 }
 
-/// Una nota del bajo transcrita por `transcribe.py`, tal como la recibe el frontend.
+/// Una nota transcrita por `transcribe.py` (bajo o piano), tal como la recibe el frontend.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NoteEvent {
@@ -571,22 +599,28 @@ impl Engine {
         command
     }
 
-    /// `transcribe.py` sobre un único `bass.wav`: en Docker es el único archivo que ve
-    /// el contenedor, en solo lectura y sin carpeta de salida (las notas llegan por stdout).
-    fn transcription_command(&self, bass: &Path, container: Option<&str>) -> Command {
+    /// `transcribe.py` sobre una única pista: en Docker es el único archivo que ve el
+    /// contenedor, en solo lectura y sin carpeta de salida (las notas llegan por stdout).
+    /// El bajo no lleva `--instrument` (es el valor por defecto): así sigue funcionando
+    /// con el `transcribe.py` de una imagen anterior a la transcripción del piano.
+    fn transcription_command(&self, track: &Path, instrument: Transcribed, container: Option<&str>) -> Command {
         let mut command = match self {
             Self::Docker { .. } => {
-                let mounts = [bind_spec(bass, TRANSCRIBE_INPUT, true)];
+                let input = format!("{TRANSCRIBE_INPUT_DIR}/{}.wav", instrument.stem());
+                let mounts = [bind_spec(track, &input, true)];
                 let mut command = self.script_command(Script::Transcribe, &mounts, container);
-                command.args(["--input", TRANSCRIBE_INPUT]);
+                command.arg("--input").arg(input);
                 command
             }
             Self::Python { .. } => {
                 let mut command = self.script_command(Script::Transcribe, &[], None);
-                command.arg("--input").arg(bass);
+                command.arg("--input").arg(track);
                 command
             }
         };
+        if instrument != Transcribed::Bass {
+            command.args(["--instrument", instrument.stem()]);
+        }
         piped(&mut command);
         command
     }
@@ -604,7 +638,13 @@ impl Engine {
         }
         if text.contains("can't open file") && text.contains(TRANSCRIBE_SCRIPT) {
             return Some(format!(
-                "El motor instalado es de una versión anterior y no transcribe el bajo para el modo práctica. {}",
+                "El motor instalado es de una versión anterior y no transcribe pistas para el modo práctica. {}",
+                self.repair_hint()
+            ));
+        }
+        if text.contains("unrecognized arguments: --instrument") {
+            return Some(format!(
+                "El motor instalado es de una versión anterior y solo transcribe el bajo para el modo práctica. {}",
                 self.repair_hint()
             ));
         }
@@ -883,7 +923,7 @@ impl SeparationState {
     }
 }
 
-/// Transcripción del bajo en curso (modo práctica). Va aparte de la separación:
+/// Transcripción en curso (modo práctica). Va aparte de la separación:
 /// puede correr a la vez que ella, pero solo hay una transcripción a la vez.
 #[derive(Default)]
 pub struct TranscriptionState(ProcessSlot);
@@ -1007,9 +1047,9 @@ fn pump_stdout(stdout: impl Read, emit: &mut impl FnMut(SeparationEvent)) -> Std
     outcome
 }
 
-/// Transcribe `bass` (el `bass.wav` de una extracción) a notas con `transcribe.py`.
+/// Transcribe `track` (el `bass.wav` o `piano.wav` de una extracción) a notas con `transcribe.py`.
 /// Tarda unos segundos (más el arranque del contenedor): llamar desde un hilo bloqueante.
-pub fn transcribe(state: &TranscriptionState, bass: &Path) -> Result<Vec<NoteEvent>, AppError> {
+pub fn transcribe(state: &TranscriptionState, track: &Path, instrument: Transcribed) -> Result<Vec<NoteEvent>, AppError> {
     // Basic Pitch es un modelo pequeño que en CPU tarda unos segundos por canción: sin
     // `--gpus`, la transcripción no depende de la GPU ni compite con una separación.
     let engine = Engine::from_env(true)?;
@@ -1021,7 +1061,7 @@ pub fn transcribe(state: &TranscriptionState, bass: &Path) -> Result<Vec<NoteEve
     }
 
     let container = container_name(&engine, "audioextract-tab");
-    let command = engine.transcription_command(bass, container.as_ref().map(|(_, name)| name.as_str()));
+    let command = engine.transcription_command(track, instrument, container.as_ref().map(|(_, name)| name.as_str()));
     let Finished {
         stdout: outcome,
         status,
@@ -1500,7 +1540,7 @@ mod tests {
     #[test]
     fn builds_transcription_command_with_only_the_bass_track() {
         let bass = Path::new("/music/AudioExtract/Mi canción/bass.wav");
-        let args = args_of(&docker(None).transcription_command(bass, Some("audioextract-tab-1")));
+        let args = args_of(&docker(None).transcription_command(bass, Transcribed::Bass, Some("audioextract-tab-1")));
         let joined = args.join(" ");
         assert!(joined.starts_with("run --rm --init --pull never --network none --name audioextract-tab-1"));
         assert!(args.contains(&"/music/AudioExtract/Mi canción/bass.wav:/input/bass.wav:ro".to_owned()));
@@ -1517,10 +1557,39 @@ mod tests {
             script: separate.clone(),
             managed: None,
         };
-        let args = args_of(&python.transcription_command(bass, None));
+        let args = args_of(&python.transcription_command(bass, Transcribed::Bass, None));
         assert_eq!(args[0], "-u");
         assert_eq!(Path::new(&args[1]), separate.with_file_name(TRANSCRIBE_SCRIPT));
         assert_eq!(&args[2..], ["--input", "/music/AudioExtract/Mi canción/bass.wav"]);
+    }
+
+    #[test]
+    fn builds_transcription_command_for_the_piano() {
+        let piano = Path::new("/music/AudioExtract/Mi canción/piano.wav");
+        let args = args_of(&docker(None).transcription_command(piano, Transcribed::Piano, None));
+        assert!(args.contains(&"/music/AudioExtract/Mi canción/piano.wav:/input/piano.wav:ro".to_owned()));
+        assert!(args
+            .join(" ")
+            .ends_with("-u /app/transcribe.py --input /input/piano.wav --instrument piano"));
+
+        let python = Engine::Python {
+            interpreter: "python".into(),
+            script: PathBuf::from("/opt/AudioExtract/python/separate.py"),
+            managed: None,
+        };
+        let args = args_of(&python.transcription_command(piano, Transcribed::Piano, None));
+        assert_eq!(
+            &args[2..],
+            ["--input", "/music/AudioExtract/Mi canción/piano.wav", "--instrument", "piano"]
+        );
+    }
+
+    #[test]
+    fn explains_engine_without_piano_transcription() {
+        let problem = docker(None)
+            .environment_problem(&["transcribe.py: error: unrecognized arguments: --instrument piano".to_owned()])
+            .unwrap();
+        assert!(problem.contains("solo transcribe el bajo"));
     }
 
     #[test]
@@ -1541,7 +1610,7 @@ mod tests {
         assert!(check.contains(&format!("{DEFAULT_IMAGE} -u /opt/audioextract/python/separate.py --check")));
 
         let bass = Path::new("/music/AudioExtract/Mi canción/bass.wav");
-        let transcription = args_of(&engine.transcription_command(bass, None));
+        let transcription = args_of(&engine.transcription_command(bass, Transcribed::Bass, None));
         assert!(transcription.contains(&app_mount));
         assert!(transcription.contains(&wheels));
         assert!(transcription.join(" ").ends_with(&format!(
@@ -1595,8 +1664,15 @@ mod tests {
         assert!(status.ready, "el motor no está listo: {:?}", status.problem);
         assert!(status.transcription, "el motor no declara la transcripción");
 
-        let notes = transcribe(&TranscriptionState::default(), Path::new(&bass)).expect("transcripción");
+        let notes = transcribe(&TranscriptionState::default(), Path::new(&bass), Transcribed::Bass).expect("transcripción");
         assert!(notes.len() > 10, "solo {} notas", notes.len());
+
+        // Si la extracción tiene piano (junto al bajo), también se transcribe.
+        let piano = Path::new(&bass).with_file_name("piano.wav");
+        if piano.is_file() {
+            let notes = transcribe(&TranscriptionState::default(), &piano, Transcribed::Piano).expect("transcripción del piano");
+            assert!(notes.len() > 10, "solo {} notas de piano", notes.len());
+        }
     }
 
     #[test]
@@ -1607,7 +1683,7 @@ mod tests {
             script: separate.clone(),
             managed: None,
         };
-        let command = python.transcription_command(Path::new("/music/bass.wav"), None);
+        let command = python.transcription_command(Path::new("/music/bass.wav"), Transcribed::Bass, None);
         let wheels = command
             .get_envs()
             .find(|(key, _)| *key == "AUDIOEXTRACT_WHEELS")

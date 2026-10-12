@@ -9,6 +9,7 @@ import { ORIGINAL_TEMPO } from "../lib/pitch";
 import type { TempoEstimate } from "../lib/tempo-estimate";
 import { STEM_LABELS, type LibraryItem } from "../types";
 import { CollapseIcon, ExpandIcon, ExportIcon, PauseIcon, PlayIcon, RefreshIcon, StopIcon, TempoIcon, ToneIcon, VolumeIcon } from "./icons";
+import { LoopButton, LoopRegion, useLoopEditing } from "./LoopControls";
 import { stemStyle } from "./NewExtraction";
 import { SemitoneControl } from "./SemitoneControl";
 import { TempoControl } from "./TempoControl";
@@ -83,11 +84,13 @@ interface DockTransportProps {
 }
 
 function DockTransport({ engine, item, expanded, onToggleExpanded, onExport }: DockTransportProps) {
-  const { tracks, playing, duration, masterFader, masterSemitones, tempo, stretch } = useEngineState(engine);
+  const { tracks, playing, duration, masterFader, masterSemitones, tempo, stretch, loop, looping } = useEngineState(engine);
   const estimate = useTempoEstimate(engine, item);
   const scrubRef = useRef<HTMLDivElement>(null);
   const timeRef = useRef<HTMLSpanElement>(null);
   const scrub = useScrub(engine);
+  const loopEdit = useLoopEditing(engine, scrub.handlers, scrubRef);
+  const region = loopEdit.preview ?? loop;
 
   // La franja superior muestra la suma visual de las pistas que suenan.
   const peaks = useMemo(() => {
@@ -121,10 +124,10 @@ function DockTransport({ engine, item, expanded, onToggleExpanded, onExport }: D
         ref={scrubRef}
         className="relative h-7 cursor-pointer touch-none text-ink-4"
         style={{ "--progress": 0 } as CSSProperties}
-        {...scrub.handlers}
+        {...loopEdit.strip}
         role="slider"
         tabIndex={0}
-        aria-label="Posición de reproducción (flechas: ±5 s)"
+        aria-label="Posición de reproducción (flechas: ±5 s; Mayús + arrastrar marca un bucle)"
         aria-valuemin={0}
         aria-valuemax={Math.round(duration)}
         onKeyDown={(event) => {
@@ -137,6 +140,15 @@ function DockTransport({ engine, item, expanded, onToggleExpanded, onExport }: D
       >
         <Waveform peaks={peaks} className="absolute inset-x-0 top-1 h-5 w-full opacity-60" />
         <Waveform peaks={peaks} className="played absolute inset-x-0 top-1 h-5 w-full text-ink-2" />
+        {region && (
+          <LoopRegion
+            range={region}
+            looping={loopEdit.preview ? loopEdit.creating || looping : looping}
+            duration={duration}
+            editable={!loopEdit.preview}
+            handle={loopEdit.handle}
+          />
+        )}
         <div
           className="pointer-events-none absolute inset-y-0 w-px bg-accent"
           style={{ left: "calc(var(--progress) * 100%)" }}
@@ -162,6 +174,7 @@ function DockTransport({ engine, item, expanded, onToggleExpanded, onExport }: D
         >
           <StopIcon width={13} height={13} />
         </button>
+        <LoopButton engine={engine} loop={loop} looping={looping} bpm={estimate?.bpm ?? null} />
 
         <p className="shrink-0 font-mono text-[13px] tabular-nums">
           <span ref={timeRef} className="text-ink">

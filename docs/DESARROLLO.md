@@ -7,8 +7,10 @@
 │   ├── App.tsx                  Vistas (biblioteca / mezclador), paneles, atajos, arrastrar y soltar
 │   ├── components/              TopBar, NewExtraction, JobRow, LibraryView/Row, Dock, MixerView,
 │   │   │                        TrackControls, Stepper (SemitoneControl, TempoControl), ExportPanel, …
-│   │   └── practice/            Modo práctica (carga diferida): BassPractice, PracticeFretboard
-│   │                            y fretboard-renderer (dibujo del mástil y la tablatura en canvas)
+│   │   ├── LoopControls.tsx     Bucle A–B del dock: botón, región sobre la onda y sus tiradores
+│   │   └── practice/            Modo práctica (carga diferida): BassPractice y PianoPractice sobre
+│   │                            PracticeShell y PracticeCanvas; fretboard-renderer y piano-renderer
+│   │                            dibujan en canvas (con canvas.ts y loop-view.ts, comunes)
 │   ├── hooks/                   useLibrary, usePlayer, useSeparation, useTempoEstimate, useUpdater, …
 │   ├── lib/
 │   │   ├── tauri.ts             Puente tipado con los comandos de Rust
@@ -17,6 +19,8 @@
 │   │   ├── pitch.ts             Rangos de semitonos y de tempo
 │   │   ├── tempo-estimate.ts    BPM a partir de las pistas (y tempo.worker.ts, que lo ejecuta)
 │   │   ├── bass-tab.ts          Notas del motor → 4/5 cuerdas y cuerda/traste de cada nota
+│   │   ├── piano-roll.ts        Notas del motor → teclas que se enseñan y mano de cada nota
+│   │   ├── loop.ts              Acciones del bucle A–B (botón y atajos L, A, B)
 │   │   ├── export.ts            Render offline + codificación + escritura
 │   │   ├── encoder.worker.ts    WAV / MP3 en un Worker
 │   │   └── preferences.ts       Preferencias locales (localStorage)
@@ -30,7 +34,7 @@
 │   └── capabilities/            Permisos
 ├── python/                      Motor de separación
 │   ├── separate.py              Protocolo, plan, separación, guardado
-│   ├── transcribe.py            Notas del bajo para el modo práctica (Basic Pitch)
+│   ├── transcribe.py            Notas del bajo y del piano para el modo práctica (Basic Pitch)
 │   ├── catalog.py               Modelos: disponibilidad y descarga
 │   ├── requirements.txt
 │   ├── requirements-transcription.txt   Dependencias de transcribe.py (basic-pitch va aparte)
@@ -92,11 +96,12 @@ instrumento, así se puede escuchar la transposición y exportar de verdad. Par�
 | `/?engine=setup` | Motor sin instalar: tarjeta de instalación y progreso simulado (`setup-cpu`: equipo sin GPU; `setup-error`: falla la descarga la primera vez; `setup-space`: no hay espacio) |
 | `/?engine=update` | Motor desactualizado: se pone al día solo al abrir |
 | `/?update` | Hay una actualización |
-| `/?tab=error` | La transcripción del bajo (modo práctica) falla |
+| `/?tab=error` | La transcripción del bajo o del piano (modo práctica) falla |
 
 En el modo demo, el bajo sintético toca fundamental, quinta y octava de cada acorde (con un C1, así que
-el mástil es de 5 cuerdas) y la transcripción simulada devuelve exactamente esas notas: sirve para
-comprobar a oído la sincronía del mástil y la tablatura.
+el mástil es de 5 cuerdas) y el piano, los acordes cada medio compás (mano derecha) y la fundamental
+grave en cada compás (izquierda). La transcripción simulada devuelve exactamente esas notas: sirve para
+comprobar a oído la sincronía del mástil, la tablatura, la cascada y el bucle.
 
 Vite sustituye `import.meta.env.MODE` al compilar, así que el modo demo no llega al build de la app.
 

@@ -186,7 +186,7 @@ function EngineSummary({ engine, checking }: { engine: EngineStatus | null; chec
       <dt className="text-ink-3">Modo práctica</dt>
       <dd className={engine.transcription ? "text-ink" : "text-ink-2"}>
         {engine.transcription
-          ? "Transcribe el bajo a tablatura"
+          ? "Transcribe el bajo (tablatura) y el piano (teclado)"
           : "No disponible en este motor"}
       </dd>
       {engine.version && (

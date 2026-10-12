@@ -48,7 +48,15 @@ export interface MixState {
   masterSemitones: number;
   /** Tempo global en porcentaje de la velocidad original; falta en mezclas guardadas antes de que existiera el tempo. */
   tempo?: number;
+  /** Región del bucle en segundos (se restaura apagado); falta si no se marcó ninguna. */
+  loop?: LoopRange;
   tracks: Partial<Record<StemId, MixTrack>>;
+}
+
+/** Tramo de la canción que se repite, en segundos (`end` no se llega a oír: ahí se vuelve a `start`). */
+export interface LoopRange {
+  start: number;
+  end: number;
 }
 
 /** Una extracción de la biblioteca (ver `LibraryItem` en src-tauri/src/library.rs). */
@@ -153,8 +161,16 @@ export type SeparationEvent =
   | { event: "progress"; data: { percent: number; stage: SeparationStage } }
   | { event: "log"; data: { message: string } };
 
-/** Nota del bajo transcrita por el motor (ver `NoteEvent` en src-tauri/src/engine.rs). */
-export interface BassNote {
+/** Pistas con modo práctica: el motor las transcribe a notas (ver `Transcribed` en src-tauri/src/engine.rs). */
+export type PracticeStem = "bass" | "piano";
+export const PRACTICE_STEMS: readonly PracticeStem[] = ["bass", "piano"];
+
+export function isPracticeStem(id: StemId): id is PracticeStem {
+  return (PRACTICE_STEMS as readonly StemId[]).includes(id);
+}
+
+/** Nota del bajo o del piano transcrita por el motor (ver `NoteEvent` en src-tauri/src/engine.rs). */
+export interface NoteEvent {
   /** Notación científica: «C#2» (MIDI 37); A4 = 440 Hz. */
   note: string;
   frequency: number;

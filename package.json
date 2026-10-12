@@ -1,7 +1,7 @@
 {
   "name": "audioextract",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Separación local de canciones en pistas por instrumento (Tauri + React + Demucs/BS-RoFormer)",
   "license": "GPL-3.0-or-later",
   "author": "Paúl Pérez",

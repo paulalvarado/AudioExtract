@@ -19,7 +19,8 @@ ella sin separarla otra vez.
 | **Mezclador** | Volumen, mute y solo por pista, vúmetros, formas de onda y desplazamiento con clic o teclado. |
 | **Semitonos** | ±12 por pista y ±12 globales, en tiempo real y sin cambiar el tempo (Signalsmith Stretch). Con 0 semitonos la pista suena idéntica al archivo. |
 | **Tempo** | Del 50 al 150 % para toda la canción, en tiempo real y sin cambiar el tono, con los BPM estimados a partir de las pistas. Al 100 % y con 0 semitonos, la pista sigue sonando idéntica al archivo. |
-| **Modo práctica** | El bajo, transcrito en tu equipo, en un mástil de 4 o 5 cuerdas y una tablatura que avanzan con la canción, al tempo que elijas, y siguen su transposición. |
+| **Modo práctica** | El bajo y el piano, transcritos en tu equipo: el bajo en un mástil de 4 o 5 cuerdas con su tablatura; el piano, en notas que caen sobre un teclado (con las manos estimadas y la opción de practicar una sola). Avanzan con la canción, al tempo que elijas, y siguen su transposición. |
+| **Bucle A–B** | Repite un pasaje sin cortes, también con el tempo frenado: un botón (cuatro compases desde donde estás), las teclas A y B, o arrastrando sus extremos sobre la onda. |
 | **Exportar** | Pistas sueltas o la mezcla que suena, en WAV 24/16 bits o MP3 320 kbps, aplicando (o no) volumen, tono y tempo. |
 | **Biblioteca** | Carpeta normal (`Música\AudioExtract`) con una subcarpeta por canción: pistas WAV + `entry.json` con la mezcla guardada. |
 | **Actualizaciones** | El instalador de una versión nueva se instala encima de la anterior sin preguntar y conserva todo; la app también puede avisar y actualizarse sola desde GitHub Releases. |

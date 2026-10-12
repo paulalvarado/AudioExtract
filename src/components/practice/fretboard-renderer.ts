@@ -1,4 +1,8 @@
 import { HAND_SPAN, lastStartedAt, pitchClass, type BassTab, type TabNote } from "../../lib/bass-tab";
+import type { LoopRange } from "../../types";
+import { loopView, songTimeAt, type LoopView } from "./loop-view";
+import type { PracticeRenderer } from "./PracticeCanvas";
+import { dot, line, loopMark, readPalette, roundRect, type Palette } from "./canvas";
 
 /*
  * Dibujo del modo práctica en un único <canvas>: arriba el mástil (puntos en los
@@ -48,18 +52,6 @@ const ATTACK_MS = 180;
 /** Constante de tiempo del deslizamiento de la caja al cambiar de posición. */
 const BOX_EASE_MS = 45;
 
-interface Palette {
-  surface: string;
-  panel: string;
-  raised: string;
-  line: string;
-  ink: string;
-  ink3: string;
-  ink4: string;
-  stem: string;
-  mono: string;
-}
-
 interface Layout {
   width: number;
   height: number;
@@ -85,7 +77,7 @@ interface Layout {
   pxPerMs: number;
 }
 
-export class FretboardRenderer {
+export class FretboardRenderer implements PracticeRenderer {
   private readonly canvas: HTMLCanvasElement;
   private readonly tab: BassTab;
   private readonly reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -98,11 +90,12 @@ export class FretboardRenderer {
   private boxHand: number | null = null;
   private lastFrameAt = 0;
   private lastMs = 0;
+  private lastView: LoopView | null = null;
 
   constructor(canvas: HTMLCanvasElement, tab: BassTab) {
     this.canvas = canvas;
     this.tab = tab;
-    this.palette = readPalette(canvas);
+    this.palette = readPalette(canvas, "--color-stem-bass");
   }
 
   /** Ajusta el canvas a su tamaño en pantalla y repinta las capas estáticas. */
@@ -117,26 +110,22 @@ export class FretboardRenderer {
       target.width = Math.round(width * this.dpr);
       target.height = Math.round(height * this.dpr);
     }
-    this.palette = readPalette(this.canvas);
+    this.palette = readPalette(this.canvas, "--color-stem-bass");
     this.layout = computeLayout(width, height, this.tab);
     this.paintStatic(this.layout);
-  }
-
-  /** Si un punto (px CSS) cae sobre la tablatura. */
-  inTab(y: number): boolean {
-    const layout = this.layout;
-    return layout !== null && y >= layout.tabTop - 16 && y <= layout.tabBottom + 16;
   }
 
   /** Segundo de la canción bajo un punto de la tablatura (para saltar ahí), o `null`. */
   timeAt(x: number, y: number): number | null {
     const layout = this.layout;
-    if (!layout || !this.inTab(y) || x < layout.tabLeft || x > layout.tabRight) return null;
-    return Math.max(0, (this.lastMs + (x - layout.nowX) / layout.pxPerMs) / 1000);
+    if (!layout || y < layout.tabTop - 16 || y > layout.tabBottom + 16 || x < layout.tabLeft || x > layout.tabRight) {
+      return null;
+    }
+    const at = this.lastMs + (x - layout.nowX) / layout.pxPerMs;
+    return Math.max(0, (this.lastView ? songTimeAt(this.lastView, at) : at) / 1000);
   }
 
-  /** Pinta el instante `ms` de la canción. `playing` activa las animaciones (al pausar o saltar, todo se coloca de golpe). */
-  draw(ms: number, playing: boolean): void {
+  draw(ms: number, playing: boolean, loop: LoopRange | null): void {
     const layout = this.layout;
     const ctx = this.canvas.getContext("2d");
     if (!layout || !ctx) return;
@@ -146,6 +135,13 @@ export class FretboardRenderer {
     this.lastFrameAt = now;
     this.lastMs = ms;
     const animate = playing && !this.reducedMotion.matches;
+    const view = loopView(
+      ms,
+      (layout.nowX - layout.tabLeft) / layout.pxPerMs,
+      (layout.tabRight - layout.nowX) / layout.pxPerMs,
+      loop,
+    );
+    this.lastView = view;
 
     const { notes } = this.tab;
     const current = lastStartedAt(notes, ms);
@@ -153,10 +149,16 @@ export class FretboardRenderer {
     for (let index = current; index >= 0 && index > current - 6; index--) {
       if (notes[index].endMs > ms) sounding.push(notes[index]);
     }
-    const coming: TabNote[] = [];
-    for (let index = current + 1; index < notes.length && coming.length < PREVIEW_COUNT; index++) {
-      if (notes[index].startMs - ms > PREVIEW_MS) break;
-      coming.push(notes[index]);
+    // Lo que viene, también al volver al inicio del bucle: con el instante en que se verá.
+    const coming: { note: TabNote; at: number }[] = [];
+    for (const window of view.windows) {
+      if (window.to + window.offset <= ms) continue;
+      const after = window.offset === 0 ? ms : window.from - 0.001;
+      for (let index = lastStartedAt(notes, after) + 1; index < notes.length && coming.length < PREVIEW_COUNT; index++) {
+        const note = notes[index];
+        if (note.startMs >= window.to || note.startMs + window.offset - ms > PREVIEW_MS) break;
+        coming.push({ note, at: note.startMs + window.offset });
+      }
     }
 
     // La caja sigue a la última nota que empezó (o espera en la primera).
@@ -175,7 +177,7 @@ export class FretboardRenderer {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
     this.paintNeckNotes(ctx, layout, ms, sounding, coming, animate);
-    this.paintTab(ctx, layout, ms);
+    this.paintTab(ctx, layout, ms, view);
   }
 
   // --- Capas estáticas --------------------------------------------------------
@@ -273,7 +275,7 @@ export class FretboardRenderer {
     layout: Layout,
     ms: number,
     sounding: TabNote[],
-    coming: TabNote[],
+    coming: { note: TabNote; at: number }[],
     animate: boolean,
   ): void {
     const { palette, tab } = this;
@@ -298,8 +300,8 @@ export class FretboardRenderer {
 
     // Lo que viene: anillos que se intensifican al acercarse.
     ctx.lineWidth = 2;
-    for (const note of coming) {
-      const proximity = 1 - (note.startMs - ms) / PREVIEW_MS;
+    for (const { note, at } of coming) {
+      const proximity = 1 - (at - ms) / PREVIEW_MS;
       const { x, y, radius } = noteDot(layout, note);
       ctx.globalAlpha = 0.25 + 0.6 * Math.max(0, proximity);
       ctx.beginPath();
@@ -332,32 +334,67 @@ export class FretboardRenderer {
     }
   }
 
-  private paintTab(ctx: CanvasRenderingContext2D, layout: Layout, ms: number): void {
+  private paintTab(ctx: CanvasRenderingContext2D, layout: Layout, ms: number, view: LoopView): void {
+    for (const window of view.windows) {
+      const left = Math.max(layout.tabLeft, layout.nowX + (window.from + window.offset - ms) * layout.pxPerMs);
+      const right = Math.min(layout.tabRight, layout.nowX + (window.to + window.offset - ms) * layout.pxPerMs);
+      if (right > left) this.paintTabWindow(ctx, layout, ms, window.from, window.to, window.offset, left, right);
+    }
+    for (const mark of view.marks) {
+      const x = layout.nowX + (mark.at - ms) * layout.pxPerMs;
+      if (x >= layout.tabLeft && x <= layout.tabRight) {
+        loopMark(ctx, this.palette, mark.kind, x, layout.tabTop - 14, layout.tabBottom + 14, "vertical");
+      }
+    }
+
+    // Línea de «ahora», como el cabezal del mezclador: tinta con un contorno oscuro.
+    const top = layout.tabTop - 14;
+    const bottom = layout.tabBottom + 14;
+    const x = Math.round(layout.nowX) + 0.5;
+    ctx.strokeStyle = "rgb(0 0 0 / 0.35)";
+    ctx.lineWidth = 3;
+    line(ctx, x, top, x, bottom);
+    ctx.strokeStyle = this.palette.ink;
+    ctx.lineWidth = 1;
+    line(ctx, x, top, x, bottom);
+  }
+
+  /** Las notas de un tramo de la canción [`from`, `to`], dibujadas `offset` ms más adelante, dentro de [`left`, `right`]. */
+  private paintTabWindow(
+    ctx: CanvasRenderingContext2D,
+    layout: Layout,
+    ms: number,
+    from: number,
+    to: number,
+    offset: number,
+    left: number,
+    right: number,
+  ): void {
     const { palette, tab } = this;
     const { notes } = tab;
-    const visibleFrom = ms - (layout.nowX - layout.tabLeft) / layout.pxPerMs;
-    const visibleTo = ms + (layout.tabRight - layout.nowX) / layout.pxPerMs;
-    const at = (time: number) => layout.nowX + (time - ms) * layout.pxPerMs;
+    const at = (time: number) => layout.nowX + (time + offset - ms) * layout.pxPerMs;
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(layout.tabLeft, layout.tabTop - 14, layout.tabRight - layout.tabLeft, layout.tabBottom - layout.tabTop + 28);
+    ctx.rect(left, layout.tabTop - 14, right - left, layout.tabBottom - layout.tabTop + 28);
     ctx.clip();
     ctx.font = `600 12px ${palette.mono}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
     // Unas notas antes de la primera visible, por si su duración aún entra en pantalla.
-    for (let index = Math.max(0, lastStartedAt(notes, visibleFrom) - 8); index < notes.length; index++) {
+    for (let index = Math.max(0, lastStartedAt(notes, from) - 8); index < notes.length; index++) {
       const note = notes[index];
-      if (note.startMs > visibleTo) break;
-      if (note.endMs < visibleFrom) continue;
+      if (note.startMs > to) break;
+      if (note.endMs < from) continue;
       const y = layout.tabStrings[note.string];
       const x = at(note.startMs);
       const label = String(note.fret);
       const labelWidth = ctx.measureText(label).width;
-      const isSounding = note.startMs <= ms && note.endMs > ms;
-      const isPast = note.endMs <= ms;
+      // En la vista, lo que hay tras volver al inicio del bucle aún no ha sonado.
+      const shown = { start: note.startMs + offset, end: note.endMs + offset };
+      const isSounding = shown.start <= ms && shown.end > ms;
+      const isPast = shown.end <= ms;
 
       // Duración: una barra fina en el color del bajo tras el número.
       const barFrom = x + labelWidth / 2 + 4;
@@ -385,17 +422,6 @@ export class FretboardRenderer {
       ctx.fillText(label, x, y + 0.5);
     }
     ctx.restore();
-
-    // Línea de «ahora», como el cabezal del mezclador: tinta con un contorno oscuro.
-    const top = layout.tabTop - 14;
-    const bottom = layout.tabBottom + 14;
-    const x = Math.round(layout.nowX) + 0.5;
-    ctx.strokeStyle = "rgb(0 0 0 / 0.35)";
-    ctx.lineWidth = 3;
-    line(ctx, x, top, x, bottom);
-    ctx.strokeStyle = palette.ink;
-    ctx.lineWidth = 1;
-    line(ctx, x, top, x, bottom);
   }
 }
 
@@ -483,41 +509,4 @@ function noteDot(layout: Layout, note: TabNote): { x: number; y: number; radius:
 function stringWidth(string: number, count: number): number {
   // En un bajo de 4 cuerdas, la más grave (E) usa el segundo grosor: el primero es la B.
   return STRING_WIDTHS[string + (count === 4 ? 1 : 0)] ?? 1.3;
-}
-
-// --- Primitivas -----------------------------------------------------------------
-
-function readPalette(element: Element): Palette {
-  const style = getComputedStyle(element);
-  const token = (name: string) => style.getPropertyValue(name).trim();
-  return {
-    surface: token("--color-surface"),
-    panel: token("--color-panel"),
-    raised: token("--color-raised"),
-    line: token("--color-line"),
-    ink: token("--color-ink"),
-    ink3: token("--color-ink-3"),
-    ink4: token("--color-ink-4"),
-    stem: token("--color-stem-bass"),
-    mono: token("--font-mono") || "monospace",
-  };
-}
-
-function line(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number): void {
-  ctx.beginPath();
-  ctx.moveTo(x0, y0);
-  ctx.lineTo(x1, y1);
-  ctx.stroke();
-}
-
-function dot(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number): void {
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number): void {
-  ctx.beginPath();
-  if (typeof ctx.roundRect === "function") ctx.roundRect(x, y, width, height, Math.min(radius, width / 2, height / 2));
-  else ctx.rect(x, y, width, height);
 }

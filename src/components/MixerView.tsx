@@ -5,17 +5,26 @@ import { useTempoEstimate } from "../hooks/useTempoEstimate";
 import { gainToDb, type MultitrackEngine, type TrackState } from "../lib/audio-engine";
 import { deviceLabel, formatDuration, formatFullDate, formatSemitones, formatTempo } from "../lib/format";
 import { ORIGINAL_TEMPO } from "../lib/pitch";
-import type { LibraryItem, StemId } from "../types";
+import { isPracticeStem, type LibraryItem, type PracticeStem, type StemId } from "../types";
 import { BackIcon, FolderIcon, ResetIcon } from "./icons";
 import { stemStyle } from "./NewExtraction";
 import { TrackControls } from "./TrackControls";
 import { Waveform } from "./Waveform";
 
-// El modo práctica (transcripción, mapeo al mástil y dibujo en canvas) va en su propio
+// Cada modo práctica (transcripción, mapeo de notas y dibujo en canvas) va en su propio
 // fragmento: solo se descarga al abrirlo, o al acercar el puntero a su botón.
-const loadPractice = () => import("./practice/BassPractice");
-const BassPractice = lazy(loadPractice);
-const preloadPractice = () => void loadPractice();
+const PRACTICE_LOADERS = {
+  bass: () => import("./practice/BassPractice"),
+  piano: () => import("./practice/PianoPractice"),
+} satisfies Record<PracticeStem, () => Promise<unknown>>;
+const PRACTICE_VIEWS = {
+  bass: lazy(PRACTICE_LOADERS.bass),
+  piano: lazy(PRACTICE_LOADERS.piano),
+};
+const PRACTICE_HINTS: Record<PracticeStem, string> = {
+  bass: "Modo práctica: mástil y tablatura del bajo, sincronizados con la canción",
+  piano: "Modo práctica: las notas del piano caen sobre un teclado, sincronizadas con la canción",
+};
 
 interface MixerViewProps {
   engine: MultitrackEngine;
@@ -44,18 +53,19 @@ export function MixerView({ engine, item, onBack, onReveal }: MixerViewProps) {
   const meterLevels = useRef<Partial<Record<StemId, number>>>({});
   const peakHold = useRef<Partial<Record<StemId, { level: number; at: number }>>>({});
   const scrub = useScrub(engine);
-  // Extracción en modo práctica (si al cambiar de canción no es esta, el modo se cierra).
-  const [practiceFor, setPracticeFor] = useState<string | null>(null);
-  const bassTrack = tracks.find((track) => track.id === "bass");
-  const practice = practiceFor === item.id && bassTrack !== undefined;
+  // Extracción y pista en modo práctica (si al cambiar de canción no es esta, el modo se cierra).
+  const [practiceFor, setPracticeFor] = useState<{ itemId: string; stem: PracticeStem } | null>(null);
+  const practiceTrack =
+    practiceFor?.itemId === item.id ? tracks.find((track) => track.id === practiceFor.stem) : undefined;
+  const practice = practiceTrack?.id ?? null;
 
   // Cabezal y vúmetros a 60 fps, directamente en el DOM.
   const frame = useCallback(() => {
     lanesRef.current?.style.setProperty("--progress", scrub.current().toFixed(5));
     const now = performance.now();
     for (const { id } of engine.getSnapshot().tracks) {
-      // En el modo práctica el mástil ocupa la pantalla: solo se mide el vúmetro del bajo.
-      if (practice && id !== "bass") continue;
+      // En el modo práctica su lienzo ocupa la pantalla: solo se mide el vúmetro de esa pista.
+      if (practice && id !== practice) continue;
       const meter = meterRefs.current[id];
       if (!meter) continue;
       const peak = engine.level(id);
@@ -99,13 +109,13 @@ export function MixerView({ engine, item, onBack, onReveal }: MixerViewProps) {
     />
   );
 
-  const practiceButton = (
+  const practiceButton = (stem: PracticeStem) => (
     <button
       type="button"
-      onClick={() => setPracticeFor(item.id)}
-      onPointerEnter={preloadPractice}
-      onFocus={preloadPractice}
-      title="Modo práctica: mástil y tablatura del bajo, sincronizados con la canción"
+      onClick={() => setPracticeFor({ itemId: item.id, stem })}
+      onPointerEnter={() => void PRACTICE_LOADERS[stem]()}
+      onFocus={() => void PRACTICE_LOADERS[stem]()}
+      title={PRACTICE_HINTS[stem]}
       className="h-6 shrink-0 rounded-md bg-raised px-2 text-[11px] font-semibold text-ink-2 transition-colors duration-100 hover:bg-line hover:text-ink"
     >
       Practicar
@@ -162,7 +172,7 @@ export function MixerView({ engine, item, onBack, onReveal }: MixerViewProps) {
         </button>
       </header>
 
-      {practice && bassTrack ? (
+      {practiceTrack && isPracticeStem(practiceTrack.id) ? (
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-line bg-panel">
           <Suspense
             fallback={
@@ -172,10 +182,12 @@ export function MixerView({ engine, item, onBack, onReveal }: MixerViewProps) {
               </p>
             }
           >
-            <BassPractice
+            <PracticeMode
+              key={practiceTrack.id}
+              stem={practiceTrack.id}
               engine={engine}
               item={item}
-              controls={controlsFor(bassTrack)}
+              controls={controlsFor(practiceTrack)}
               onClose={() => setPracticeFor(null)}
             />
           </Suspense>
@@ -187,7 +199,7 @@ export function MixerView({ engine, item, onBack, onReveal }: MixerViewProps) {
           <div className="flex flex-col divide-y divide-line border-r border-line">
             {tracks.map((track) => (
               <div key={track.id} className="min-h-[52px] flex-1">
-                {controlsFor(track, track.id === "bass" ? practiceButton : undefined)}
+                {controlsFor(track, isPracticeStem(track.id) ? practiceButton(track.id) : undefined)}
               </div>
             ))}
           </div>
@@ -236,4 +248,18 @@ export function MixerView({ engine, item, onBack, onReveal }: MixerViewProps) {
       )}
     </div>
   );
+}
+
+interface PracticeModeProps {
+  stem: PracticeStem;
+  engine: MultitrackEngine;
+  item: LibraryItem;
+  controls: ReactNode;
+  onClose: () => void;
+}
+
+/** El modo práctica de una pista, cargado aparte. */
+function PracticeMode({ stem, ...props }: PracticeModeProps) {
+  const View = PRACTICE_VIEWS[stem];
+  return <View {...props} />;
 }

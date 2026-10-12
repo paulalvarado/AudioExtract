@@ -7,13 +7,14 @@ import {
   type LibraryItem,
   type MixState,
   type OptionalStem,
+  type PracticeStem,
   type SeparationEvent,
   type SeparationRequest,
   type SetupEvent,
   type SetupPlan,
   type StemId,
 } from "../types";
-import { DEMO_SAMPLE_RATE, synthBassNotes, synthStem } from "./synth";
+import { DEMO_SAMPLE_RATE, synthBassNotes, synthPianoNotes, synthStem } from "./synth";
 
 /*
  * Modo demo (`npm run dev:web`): la interfaz completa en un navegador, sin Rust
@@ -22,7 +23,7 @@ import { DEMO_SAMPLE_RATE, synthBassNotes, synthStem } from "./synth";
  *   ?engine=down    motor no disponible · ?engine=old  motor v1 · ?engine=cpu  sin GPU
  *   ?engine=setup   motor sin instalar (también setup-cpu, setup-error, setup-space y update)
  *   ?update         hay una actualización disponible
- *   ?tab=error      la transcripción del bajo (modo práctica) falla
+ *   ?tab=error      la transcripción del bajo o del piano (modo práctica) falla
  */
 
 const params = new URLSearchParams(location.search);
@@ -234,15 +235,17 @@ function engineStatus(): EngineStatus {
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 let cancelled = false;
 let firstCheck = true;
-/** Extracciones cuyo bajo ya se «transcribió»: como `bass.notes.json`, la segunda vez es inmediata. */
+/** Pistas ya «transcritas»: como `bass.notes.json`, la segunda vez es inmediata. */
 const transcribed = new Set<string>();
 
-async function generateBassTab(id: string) {
+async function transcribeStem(id: string, stem: PracticeStem) {
   const item = library.find((candidate) => candidate.id === id);
-  if (!item || !item.stems.includes("bass") || item.missing.includes("bass")) {
-    throw { kind: "library", message: `«${id}» no tiene pista de bajo en el disco: no se puede abrir el modo práctica.` };
+  const name = stem === "bass" ? "bajo" : "piano";
+  if (!item || !item.stems.includes(stem) || item.missing.includes(stem)) {
+    throw { kind: "library", message: `«${id}» no tiene pista de ${name} en el disco: no se puede abrir el modo práctica.` };
   }
-  if (!transcribed.has(id)) {
+  const key = `${id}\n${stem}`;
+  if (!transcribed.has(key)) {
     await wait(2200);
     if (params.get("tab") === "error") {
       throw {
@@ -250,9 +253,9 @@ async function generateBassTab(id: string) {
         message: "El motor terminó con error (código 1):\nRuntimeError: no se pudo cargar el modelo de Basic Pitch",
       };
     }
-    transcribed.add(id);
+    transcribed.add(key);
   }
-  return synthBassNotes(item.durationSec);
+  return stem === "bass" ? synthBassNotes(item.durationSec) : synthPianoNotes(item.durationSec);
 }
 
 async function separate(inputPath: string, request: SeparationRequest, channel: Channel<SeparationEvent>): Promise<LibraryItem> {
@@ -367,8 +370,8 @@ export function installMocks(): void {
         case "cancel_separation":
           cancelled = true;
           return true;
-        case "generate_bass_tab":
-          return generateBassTab(String(args.id));
+        case "transcribe_stem":
+          return transcribeStem(String(args.id), args.stem as PracticeStem);
         case "export_choose_folder":
           return "C:\\Users\\demo\\Desktop";
         case "export_choose_file":

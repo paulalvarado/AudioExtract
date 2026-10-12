@@ -5,6 +5,14 @@ export function formatTime(seconds: number): string {
   return `${minutes}:${rest.toString().padStart(2, "0")}`;
 }
 
+/** Con décimas, para marcas precisas como las del bucle: 62.34 → «1:02,3». */
+export function formatTimePrecise(seconds: number): string {
+  const tenths = Math.round((Number.isFinite(seconds) ? Math.max(seconds, 0) : 0) * 10);
+  const minutes = Math.floor(tenths / 600);
+  const rest = (tenths % 600) / 10;
+  return `${minutes}:${rest.toFixed(1).padStart(4, "0").replace(".", ",")}`;
+}
+
 export function formatDb(db: number): string {
   if (!Number.isFinite(db)) return "−∞";
   const rounded = Math.round(db * 10) / 10;
